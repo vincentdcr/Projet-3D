@@ -29,7 +29,7 @@ class TexturedPlane(Textured):
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         texture = Texture(tex_file, self.wrap, *self.filter)
-        super().__init__(mesh, diffuse_map=texture)
+        super().__init__(mesh, cube_map=texture) # change to cube map along with the shader used for chrome effect
 
     def key_handler(self, key):
         # cycle through texture modes on keypress of F6 (wrap) or F7 (filtering)
@@ -62,7 +62,7 @@ class CubeMapTexture(TexturedCube):
 def main():
     """ create a window, add scene objects, then run rendering loop """
     viewer = Viewer()
-    shader = Shader("glsl/texture.vert", "glsl/texture.frag")
+    shader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
 
     light_dir = (-0.5, 1, 0.5)
