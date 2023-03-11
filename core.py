@@ -37,17 +37,23 @@ class Shader:
             os._exit(1)
         return shader
 
-    def __init__(self, vertex_source, fragment_source, debug=False):
+    def __init__(self, vertex_source, fragment_source, geom_source=None, debug=False):
         """ Shader can be initialized with raw strings or source file names """
         vert = self._compile_shader(vertex_source, GL.GL_VERTEX_SHADER)
         frag = self._compile_shader(fragment_source, GL.GL_FRAGMENT_SHADER)
+        if (not geom_source is None):
+            geom = self._compile_shader(geom_source, GL.GL_GEOMETRY_SHADER)
         if vert and frag:
             self.glid = GL.glCreateProgram()  # pylint: disable=E1111
             GL.glAttachShader(self.glid, vert)
             GL.glAttachShader(self.glid, frag)
+            if (not geom_source is None):
+                GL.glAttachShader(self.glid, geom)
             GL.glLinkProgram(self.glid)
             GL.glDeleteShader(vert)
             GL.glDeleteShader(frag)
+            if (not geom_source is None):
+                GL.glDeleteShader(geom)
             status = GL.glGetProgramiv(self.glid, GL.GL_LINK_STATUS)
             if not status:
                 print(GL.glGetProgramInfoLog(self.glid).decode('ascii'))

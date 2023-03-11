@@ -62,12 +62,13 @@ class CubeMapTexture(TexturedCube):
 def main():
     """ create a window, add scene objects, then run rendering loop """
     viewer = Viewer()
-    shader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag")
+    shader = Shader("glsl/texture.vert", "glsl/texture.frag")
+    #normalvizShader = Shader("glsl/normalviz.vert", "glsl/normalviz.frag", "glsl/normalviz.geom") debug the normal vectors
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
 
     light_dir = (-0.5, 1, 0.5)
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader, light_dir=light_dir)])
-
+    #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) debug normal vect
     if len(sys.argv) != 2:
         print('Usage:\n\t%s [3dfile]*\n\n3dfile\t\t the filename of a model in'
               ' format supported by assimp.' % (sys.argv[0],))
