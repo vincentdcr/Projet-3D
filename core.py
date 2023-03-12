@@ -345,7 +345,7 @@ def timer():
 class Viewer(Node):
     """ GLFW viewer window, with classic initialization & graphics loop """
 
-    def __init__(self, width=640, height=480):
+    def __init__(self, width=1280, height=720):
         super().__init__()
 
         # version hints: create GL window with >= OpenGL 3.3 and core profile

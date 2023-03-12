@@ -27,5 +27,5 @@ void main() {
     vec3 I = k_a + max(k_d*dot(normalize(w_normal), light_dir ),0)+k_s*pow(max(dot(view_vector, r),0), s);
     vec3 texture = texture(diffuse_map, frag_tex_coords).rgb;
     vec3 light_texture = I * texture;
-    out_color = vec4(light_texture,1);
+    out_color = vec4(texture,1); // put back light_texture once normals are computed
 }
