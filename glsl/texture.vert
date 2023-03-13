@@ -16,8 +16,9 @@ out vec3 w_position, w_normal;   // in world coordinates
 
 void main() {
     // TODO: compute the vertex position and normal in world or view coordinates
-    w_normal = (model * vec4(normal, 0)).xyz;
-    w_position = (model * vec4(position, 1)).xyz;
-    gl_Position = projection * view * model * vec4(position, 1);
+    w_normal = normalize(transpose(inverse(mat3(model))) * normal);
+    vec4 w_position4 = (model * vec4(position, 1));
+    w_position = w_position4.xyz / w_position4.w;
+    gl_Position = projection * view * w_position4;
     frag_tex_coords = tex_coord;
 }

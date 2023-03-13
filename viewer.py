@@ -65,13 +65,18 @@ def main():
     viewer = Viewer()
     shader = Shader("glsl/texture.vert", "glsl/texture.frag")
     normalvizShader = Shader("glsl/normalviz.vert", "glsl/normalviz.frag", "glsl/normalviz.geom") 
+    lightCubeShader = Shader("glsl/lightcube.vert", "glsl/lightcube.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
 
-    light_dir = (-0.5, 1, 0.5)
-    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader, light_dir=light_dir)])
-    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
-    viewer.add(Terrain(shader, "grass.png", 100, 100))
-    viewer.add(Terrain(normalvizShader, "grass.png", 100, 100))
+
+
+
+    light_dir = (4, 1, 4)
+    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader, light_dir=light_dir )])
+    #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
+    #viewer.add(*[mesh for mesh in load("cube.obj", lightCubeShader, light_dir=light_dir, position=light_dir)])
+    viewer.add(Terrain(shader, "grass.png", 9, 9))
+    viewer.add(Terrain(normalvizShader, "grass.png", 9, 9))
     # start rendering loop
     viewer.add(CubeMapTexture(skyboxShader, "skybox/"))
     viewer.run()   

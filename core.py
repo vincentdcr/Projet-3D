@@ -289,7 +289,7 @@ def load(file, shader, tex_file=None, **params):
             k_d=mat.get('COLOR_DIFFUSE', (1, 1, 1)),
             k_s=mat.get('COLOR_SPECULAR', (1, 1, 1)),
             k_a=mat.get('COLOR_AMBIENT', (0, 0, 0)),
-            s=mat.get('SHININESS', 16.),
+            s=mat.get('SHININESS', 32),
         )
         attributes = dict(
             position=mesh.mVertices,
@@ -389,6 +389,8 @@ class Viewer(Node):
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
+
+            light_dir = ( 1 + np.sin(glfw.get_time()) * 2, 1, np.sin(glfw.get_time() / 2) * 1)
 
             # draw our scene objects
             cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]

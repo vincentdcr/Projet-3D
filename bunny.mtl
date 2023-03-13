@@ -7,6 +7,6 @@ newmtl bunny
   illum 2
   Ka 0.0000 0.0000 0.0000
   Kd 1.0 1.0 1.00
-  Ks 0.06 0.08 0.04
+  Ks 0.3 0.4 0.2
   Ke 0.0000 0.0000 0.0000
   map_Kd bunny.png
