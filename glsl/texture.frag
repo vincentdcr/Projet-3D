@@ -20,14 +20,26 @@ uniform float s;
 // world camera position
 uniform vec3 w_camera_position;
 
+//Fog specified color
+uniform vec3 fog_color;
+
+float computeFog(float d)
+{
+    const float FogMax = 80.0;
+    const float FogMin = 60.0;
+
+    return clamp((1 - ((FogMax - d) / (FogMax - FogMin))), 0.0, 1.0);
+}
+
 void main() {
         // compute Lambert illumination
     vec3 lightDir = normalize(light_dir - w_position);
     vec3 r = reflect(-lightDir, normalize(w_normal));
     vec3 view_vector =normalize(w_camera_position - w_position);
-    vec3 I = k_a + k_d*max(dot(normalize(w_normal), lightDir ),0)+k_s*pow(max(dot(r, view_vector),0), s);
+    vec3 I = vec3(0.3,0.3,0.3) + vec3(0.8,0.8,0.8)*max(dot(normalize(w_normal), lightDir ),0)+vec3(0.8,1,0.8)*pow(max(dot(r, view_vector),0), 2);
+    //vec3 I = k_a + k_d*max(dot(normalize(w_normal), lightDir ),0)+k_s*pow(max(dot(r, view_vector),0), s);
     vec3 texture = texture(diffuse_map, frag_tex_coords).rgb;
     vec3 light_texture = I * texture;
-    out_color = vec4(light_texture,1); // put back light_texture once normals are computed
+    out_color = mix( vec4(light_texture,1), vec4(fog_color,1), computeFog(distance(w_camera_position, w_position))); // put back light_texture once normals are computed
 }
 

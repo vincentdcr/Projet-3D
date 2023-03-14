@@ -288,7 +288,7 @@ def load(file, shader, tex_file=None, **params):
         uniforms = dict(
             k_d=mat.get('COLOR_DIFFUSE', (1, 1, 1)),
             k_s=mat.get('COLOR_SPECULAR', (1, 1, 1)),
-            k_a=mat.get('COLOR_AMBIENT', (0, 0, 0)),
+            k_a=mat.get('COLOR_AMBIENT', (0.4, 0.4, 0.4)),
             s=mat.get('SHININESS', 32),
         )
         attributes = dict(
@@ -390,14 +390,16 @@ class Viewer(Node):
 
             win_size = glfw.get_window_size(self.win)
 
-            light_dir = ( 1 + np.sin(glfw.get_time()) * 2, 1, np.sin(glfw.get_time() / 2) * 1)
-
+            main_light = ( 4 + np.sin(timer()) * 2, 1, 4+ np.sin(timer() / 2) * 1)
+            fog = (0.2,0.4,0.2)
             # draw our scene objects
             cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
             self.draw(view=self.trackball.view_matrix(),
                       projection=self.trackball.projection_matrix(win_size),
                       model=identity(),
-                      w_camera_position=cam_pos)
+                      w_camera_position=cam_pos,
+                      light_dir=main_light,
+                      fog_color=fog)
 
             # flush render commands, and swap draw buffers
             glfw.swap_buffers(self.win)

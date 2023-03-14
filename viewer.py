@@ -4,10 +4,10 @@ from itertools import cycle
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import glfw                         # lean window system wrapper for OpenGL
 import numpy as np                  # all matrix manipulations & OpenGL args
-from core import Shader, Viewer, Mesh, load
+from core import Shader, Viewer, Mesh, load, Node
 from texture import Texture, Textured, CubeMapTex, TexturedCube
 from terrain import Terrain
-
+from transform import translate
 
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
@@ -72,11 +72,11 @@ def main():
 
 
     light_dir = (4, 1, 4)
-    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader, light_dir=light_dir )])
+    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader )])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
     #viewer.add(*[mesh for mesh in load("cube.obj", lightCubeShader, light_dir=light_dir, position=light_dir)])
-    viewer.add(Terrain(shader, "grass.png", 9, 9))
-    viewer.add(Terrain(normalvizShader, "grass.png", 9, 9))
+    viewer.add(Terrain(shader, "grass.png", 100, 100))
+    #viewer.add(Terrain(normalvizShader, "grass.png", 9, 9))
     # start rendering loop
     viewer.add(CubeMapTexture(skyboxShader, "skybox/"))
     viewer.run()   
