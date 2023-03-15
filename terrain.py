@@ -3,33 +3,42 @@ import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import  Mesh
 from texture import Texture, Textured
+from transform import normalized
+from PIL import Image
 
 
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, tex_file, map_width, map_height):
+    def __init__(self, shader, tex_file, map_width, map_height, heightmap_file):
         self.file = tex_file
-
-        noise_map = generate_noise_map(map_width, map_height)
-        vertices = generate_vertices(map_width, map_height, noise_map)
+        height_map = generate_height_map(map_width, map_height, heightmap_file)
+        vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
         normals = generate_normals(map_width, map_height, vertices) 
         # setup plane mesh to be textured
-        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices )
+        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.75,0.75,0.75), k_d=(0.9,0.9,0.9), k_s=(0.2,0.3,0.2), s=16)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         texture = Texture(tex_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
         super().__init__(mesh, diffuse_map=texture)
 
 
-def generate_noise_map(width, height):
+def generate_height_map(width, height, heightmap_file):
     noise_map = []
-    
+
+    MIN_HEIGHT = -32
+    MAX_HEIGHT = 32
+
+    im = Image.open(heightmap_file) 
+    heightmap = im.load()
     for z in range(0,height): 
         for x in range(0,width):
-            noise_map.append(0)
+            if (x>=im.size[0] or z>=im.size[1]):
+                noise_map.append (0) # not in height map value
+            else:
+                noise_map.append (np.interp(heightmap[x,z][0], [0,255], [MIN_HEIGHT,MAX_HEIGHT])) #map height map value
     return noise_map
 
 
@@ -74,16 +83,17 @@ def generate_texcoords(width, height):
 
 def generate_normals(width, height, position):
 
-    normals = np.full((width*height, 3), fill_value=np.array([0,6,0]))
+    normals = np.full((width*height, 3), fill_value=np.array([0.0,6.0,0.0]))
     for z in range(1,height-1): 
         for x in range(1,width-1):
             Yu       = position[x + (z+1)*width][1]
-            Yur = position[x+1 + (z+1)*width][1]
-            Yr = position[x+1 + z*width][1]
+            Yul = position[x+1 + (z+1)*width][1]
+            Yl = position[x+1 + z*width][1]
             Yd = position[x + (z-1)*width][1]
-            Ydl = position[x-1 + (z-1)*width][1]
-            Yl = position[x-1 + z][1]
-            normal = np.array([  (2*(Yl - Yr) - Yur + Ydl + Yu - Yd), 6, (2*(Yd - Yu) + Yur + Ydl - Yu - Yl)  ])
-            normals[x+z*width] = normal
+            Ydr = position[x-1 + (z-1)*width][1]
+            Yr = position[x-1 + z*width][1]
+            # normal = np.array([  Yr - Yl, 2, Yd - Yu ]) simplified version
+            normal = np.array([  (2*(Yr - Yl) - Yul + Ydr + Yu - Yd), 6, (2*(Yd - Yu) + Yul + Ydr - Yu - Yr)  ])
+            normals[x+z*width] = normalized(normal)
     return normals # Normalization ??
 

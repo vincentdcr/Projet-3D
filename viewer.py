@@ -7,7 +7,8 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Shader, Viewer, Mesh, load, Node
 from texture import Texture, Textured, CubeMapTex, TexturedCube
 from terrain import Terrain
-from transform import translate
+from transform import translate, vec, quaternion
+from animation import KeyFrameControlNode
 
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
@@ -68,17 +69,19 @@ def main():
     lightCubeShader = Shader("glsl/lightcube.vert", "glsl/lightcube.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
 
-
-
-
-    light_dir = (4, 1, 4)
-    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader )])
+    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
-    #viewer.add(*[mesh for mesh in load("cube.obj", lightCubeShader, light_dir=light_dir, position=light_dir)])
-    viewer.add(Terrain(shader, "grass.png", 100, 100))
-    #viewer.add(Terrain(normalvizShader, "grass.png", 9, 9))
+    translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(0,0,0)}
+    rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
+    scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
+    keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
+    keynode.add(Node(load("cube.obj", lightCubeShader)))
+    viewer.add(keynode)
+    viewer.add(Terrain(shader, "grass.png", 256, 256, "heightmap.png"))
+    #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
     # start rendering loop
     viewer.add(CubeMapTexture(skyboxShader, "skybox/"))
+
     viewer.run()   
 
 

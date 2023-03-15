@@ -161,6 +161,7 @@ class Mesh:
     """ Basic mesh class, attributes and uniforms passed as arguments """
     def __init__(self, shader, attributes, index=None,
                  usage=GL.GL_STATIC_DRAW, **uniforms):
+        print(uniforms)
         self.shader = shader
         self.uniforms = uniforms
         self.vertex_array = VertexArray(shader, attributes, index, usage)
@@ -382,6 +383,9 @@ class Viewer(Node):
         # cyclic iterator to easily toggle polygon rendering modes
         self.fill_modes = cycle([GL.GL_LINE, GL.GL_POINT, GL.GL_FILL])
 
+        #init global light
+        self.main_light = (4,1,4)
+
     def run(self):
         """ Main render loop for this OpenGL window """
         while not glfw.window_should_close(self.win):
@@ -390,7 +394,7 @@ class Viewer(Node):
 
             win_size = glfw.get_window_size(self.win)
 
-            main_light = ( 4 + np.sin(timer()) * 2, 1, 4+ np.sin(timer() / 2) * 1)
+            self.main_light = ( 128 + np.sin(timer()) * 128, 35, 128)
             fog = (0.2,0.4,0.2)
             # draw our scene objects
             cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
@@ -398,7 +402,7 @@ class Viewer(Node):
                       projection=self.trackball.projection_matrix(win_size),
                       model=identity(),
                       w_camera_position=cam_pos,
-                      light_dir=main_light,
+                      light_dir=self.main_light,
                       fog_color=fog)
 
             # flush render commands, and swap draw buffers
@@ -436,3 +440,6 @@ class Viewer(Node):
     def on_size(self, _win, _width, _height):
         """ window size update => update viewport to new framebuffer size """
         GL.glViewport(0, 0, *glfw.get_framebuffer_size(self.win))
+
+    def getLightPos(self):
+        return self.main_light
