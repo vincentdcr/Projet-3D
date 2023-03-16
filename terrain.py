@@ -46,7 +46,7 @@ def generate_vertices(width, height, noise_map):
     v = []
     for z in range(0,height): 
         for x in range(0,width):
-            v.append((x, noise_map[x + z*width], z))   
+            v.append((-height/2 + x, noise_map[x + z*width], -width/2 + z))   
     return np.asarray(v)
 
 def generate_indices(width, height):
