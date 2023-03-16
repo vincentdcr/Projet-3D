@@ -12,3 +12,6 @@ void main()
     vec4 pos = projection * mat4(mat3(view)) * vec4(position, 1.0); // disabled the translation component of the view matrix
     gl_Position = pos.xyww;
 }  
+
+
+

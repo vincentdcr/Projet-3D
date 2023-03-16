@@ -88,8 +88,6 @@ class TexturedCube:
         for index, (name, texture) in enumerate(self.textures.items()):
             GL.glActiveTexture(GL.GL_TEXTURE0 + index)
             GL.glBindTexture(texture.type, texture.glid)
-            GL.glDrawArrays(GL.GL_TRIANGLES, 0, 36)
-            GL.glBindVertexArray(0)
             uniforms[name] = index
         self.drawable.draw(primitives=primitives, **uniforms)
         GL.glDepthFunc(GL.GL_LESS); # set depth function back to default

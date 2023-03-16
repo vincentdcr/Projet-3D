@@ -43,7 +43,7 @@ class TexturedPlane(Textured):
 
 class CubeMapTexture(TexturedCube):
     """ Simple first textured object """
-    def __init__(self, shader, tex_path):
+    def __init__(self, shader, tex_path, tex_path2):
         self.file = tex_path
 
         # setup cube mesh to be textured
@@ -58,7 +58,8 @@ class CubeMapTexture(TexturedCube):
 
         # setup & upload texture to GPU, bind it to shader name 'cube_map'
         texture = CubeMapTex(tex_path)
-        super().__init__(mesh, cube_map=texture)
+        texture2 = CubeMapTex(tex_path2)
+        super().__init__(mesh, cube_map=texture, cube_map2=texture2)
 
 # -------------- main program and scene setup --------------------------------
 def main():
@@ -80,7 +81,7 @@ def main():
     viewer.add(Terrain(shader, "grass.png", 256, 256, "heightmap.png"))
     #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
     # start rendering loop
-    viewer.add(CubeMapTexture(skyboxShader, "skybox/"))
+    viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 
     viewer.run()   
 

@@ -393,6 +393,7 @@ class Viewer(Node):
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
+            print ()
 
             self.main_light = ( 128 + np.sin(timer()) * 128, 35, 128)
             fog = (0.2,0.4,0.2)
@@ -403,7 +404,8 @@ class Viewer(Node):
                       model=identity(),
                       w_camera_position=cam_pos,
                       light_dir=self.main_light,
-                      fog_color=fog)
+                      fog_color=fog,
+                      time_of_day = self.getCurrentTimeOfDay())
 
             # flush render commands, and swap draw buffers
             glfw.swap_buffers(self.win)
@@ -443,3 +445,9 @@ class Viewer(Node):
 
     def getLightPos(self):
         return self.main_light
+    
+    def getCurrentTimeOfDay(self):
+        """ return a value between 1 (day) and 0 (night) to be used in the skyboxShader"""
+        t = timer()
+        DAY_TIME = 30 #tps du jour en secondes
+        return (np.cos((t*np.pi)/DAY_TIME)+1)/2
