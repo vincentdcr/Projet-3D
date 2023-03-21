@@ -28,8 +28,8 @@ class Terrain(Textured):
 def generate_height_map(width, height, heightmap_file):
     noise_map = []
 
-    MIN_HEIGHT = -32
-    MAX_HEIGHT = 32
+    MIN_HEIGHT = -64
+    MAX_HEIGHT = 64
 
     im = Image.open(heightmap_file) 
     heightmap = im.load()

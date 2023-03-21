@@ -9,6 +9,7 @@ from texture import Texture, Textured, CubeMapTex, TexturedCube
 from terrain import Terrain
 from transform import translate, vec, quaternion
 from animation import KeyFrameControlNode
+from water import Water
 
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
@@ -69,6 +70,7 @@ def main():
     normalvizShader = Shader("glsl/normalviz.vert", "glsl/normalviz.frag", "glsl/normalviz.geom") 
     lightCubeShader = Shader("glsl/lightcube.vert", "glsl/lightcube.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
+    waterShader = Shader("glsl/water.vert", "glsl/water.frag")
 
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
@@ -80,9 +82,10 @@ def main():
     viewer.add(keynode)
     viewer.add(Terrain(shader, "grass.png", 256, 256, "heightmap.png"))
     #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
-    # start rendering loop
+    viewer.add(Water(waterShader, 256, 256, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 
+    # start rendering loop
     viewer.run()   
 
 

@@ -10,7 +10,10 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 import assimpcy                     # 3D resource loader
 
 # our transform functions
-from transform import Trackball, identity
+from transform import Trackball, identity, lookat
+from waterFrameBuffer import WaterFrameBuffers
+from quad import Quad
+import water
 
 # initialize and automatically terminate glfw on exit
 glfw.init()
@@ -147,7 +150,6 @@ class VertexArray:
         for name, data in attributes.items():
             GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.buffers[name])
             GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, data)
-
         GL.glBindVertexArray(self.glid)
         self.draw_command(primitive, *self.arguments)
 
@@ -161,7 +163,6 @@ class Mesh:
     """ Basic mesh class, attributes and uniforms passed as arguments """
     def __init__(self, shader, attributes, index=None,
                  usage=GL.GL_STATIC_DRAW, **uniforms):
-        print(uniforms)
         self.shader = shader
         self.uniforms = uniforms
         self.vertex_array = VertexArray(shader, attributes, index, usage)
@@ -184,11 +185,12 @@ class Node:
         """ Add drawables to this node, simply updating children list """
         self.children.extend(drawables)
 
-    def draw(self, model=identity(), **other_uniforms):
+    def draw(self, model=identity(), draw_water_flag=True, **other_uniforms):
         """ Recursive draw, passing down updated model matrix. """
         self.world_transform = model @ self.transform
         for child in self.children:
-            child.draw(model=self.world_transform, **other_uniforms)
+            if (not isinstance(child, water.Water) or draw_water_flag):
+                child.draw(model=self.world_transform, **other_uniforms)
 
     def key_handler(self, key):
         """ Dispatch keyboard events to children with key handler """
@@ -225,7 +227,6 @@ def load(file, shader, tex_file=None, **params):
     except assimpcy.all.AssimpError as exception:
         print('ERROR loading', file + ': ', exception.args[0].decode())
         return []
-
     # ----- Pre-load textures; embedded textures not supported at the moment
     path = os.path.dirname(file) if os.path.dirname(file) != '' else './'
     for mat in scene.mMaterials:
@@ -386,27 +387,74 @@ class Viewer(Node):
         #init global light
         self.main_light = (4,1,4)
 
+        self.waterFrameBuffers = WaterFrameBuffers(self.win)
+
+
     def run(self):
         """ Main render loop for this OpenGL window """
+
+        #quadShader = Shader("glsl/fboviz.vert", "glsl/fboviz.frag")
+
+        # setup quad mesh for FBO vizualisation
+        #base_coords = ((-1, -1, 0), (1, -1, 0), (1, 1, 0), (-1, 1, 0))
+        #indices = np.array((1, 3, 0, 1 , 2 , 3), np.uint32)
+        #texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
+        #mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
+
+        WATER_HEIGHT = -1 # Should be synced with water height from water.py
+        WAVE_SPEED_FACTOR = 0.02
+        reflection_clip_plane = (0.0,1.0,0.0,-WATER_HEIGHT+0.5) # 4th param = -(water height) + small overlap to prevent glitches
+        refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
+        fog = (1,0.2,0.2)
+
         while not glfw.window_should_close(self.win):
             # clear draw buffer and depth buffer (<-TP2)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
-            print ()
-
-            self.main_light = ( 128 + np.sin(timer()) * 128, 35, 128)
-            fog = (0.2,0.4,0.2)
+            self.main_light = ( np.sin(timer()) * 128, 35, 0)
             # draw our scene objects
+            self.waterFrameBuffers.bindReflectionFrameBuffer()
+            GL.glEnable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
+            cam_pos[1] = cam_pos[1] - 2*(cam_pos[1] - WATER_HEIGHT) #cam_pos - distance (same dist underwater)
+            self.draw(view=self.compute_view_matrix_for_reflection(cam_pos),
+                      projection=self.trackball.projection_matrix(win_size),
+                      model=identity(),
+                      draw_water_flag = False,
+                      w_camera_position=cam_pos,
+                      light_dir=self.main_light,
+                      fog_color=fog,
+                      time_of_day = self.getCurrentTimeOfDay(),
+                      clipping_plane= reflection_clip_plane)
+            self.waterFrameBuffers.unbindCurrentFrameBuffer()
+            self.waterFrameBuffers.bindRefractionFrameBuffer()
+            cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
+            self.draw(view=self.trackball.view_matrix(),
+                      projection=self.trackball.projection_matrix(win_size),
+                      model=identity(),
+                      draw_water_flag = False,
+                      w_camera_position=cam_pos,
+                      light_dir=self.main_light,
+                      fog_color=fog,
+                      time_of_day = self.getCurrentTimeOfDay(),
+                      clipping_plane= refraction_clip_plane)
+            self.waterFrameBuffers.unbindCurrentFrameBuffer()
+            GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
+
             self.draw(view=self.trackball.view_matrix(),
                       projection=self.trackball.projection_matrix(win_size),
                       model=identity(),
                       w_camera_position=cam_pos,
                       light_dir=self.main_light,
                       fog_color=fog,
-                      time_of_day = self.getCurrentTimeOfDay())
-
+                      time_of_day = self.getCurrentTimeOfDay(),
+                      displacement_speed = timer() * WAVE_SPEED_FACTOR % 1)
+            
+            # Draw the FBOS texture in a quad in the corner of the screen
+            #Quad(self.waterFrameBuffers.getReflectionTexture(), mesh).draw(view=self.trackball.view_matrix(),
+            #             projection=self.trackball.projection_matrix(win_size),
+            #             model=identity())
             # flush render commands, and swap draw buffers
             glfw.swap_buffers(self.win)
 
@@ -451,3 +499,13 @@ class Viewer(Node):
         t = timer()
         DAY_TIME = 30 #tps du jour en secondes
         return (np.cos((t*np.pi)/DAY_TIME)+1)/2
+    
+    def getWaterFrameBuffers(self):
+        return self.waterFrameBuffers
+
+    def compute_view_matrix_for_reflection(self, cam_pos):
+        invertedDirection = self.trackball.getDirectionVector()
+        invertedDirection[1] = - invertedDirection[1]
+        lookAtPosition = cam_pos[:3] + self.trackball.distance * invertedDirection
+        return lookat(cam_pos[:3], lookAtPosition, (0.0,1.0,0.0))
+    

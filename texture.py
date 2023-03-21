@@ -1,6 +1,7 @@
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 from PIL import Image               # load texture maps
 import os
+import numpy as np
 
 
 # -------------- OpenGL Texture Wrapper ---------------------------------------
@@ -73,7 +74,10 @@ class Textured:
     def draw(self, primitives=GL.GL_TRIANGLES, **uniforms):
         for index, (name, texture) in enumerate(self.textures.items()):
             GL.glActiveTexture(GL.GL_TEXTURE0 + index)
-            GL.glBindTexture(texture.type, texture.glid)
+            if(isinstance(texture, np.uint32)): #for self generated texture from FBOS
+                GL.glBindTexture(GL.GL_TEXTURE_2D, texture)
+            else:
+                GL.glBindTexture(texture.type, texture.glid)
             uniforms[name] = index
         self.drawable.draw(primitives=primitives, **uniforms)
 

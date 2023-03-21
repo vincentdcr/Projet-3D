@@ -220,3 +220,11 @@ class Trackball:
         old, new = (normalized(self._project3d(pos)) for pos in (old, new))
         phi = 2 * math.acos(np.clip(np.dot(old, new), -1, 1))
         return quaternion_from_axis_angle(np.cross(old, new), radians=phi)
+    
+    def getDirectionVector(self):
+        R1 = ( 2*self.rotation[0]**2 + 2*self.rotation[1]**2 - 1, 2*self.rotation[1]*self.rotation[2] + 2*self.rotation[0]*self.rotation[3], 2*self.rotation[1]*self.rotation[3] - 2*self.rotation[0]*self.rotation[2] )
+        R2 = ( 2*self.rotation[1]*self.rotation[2] - 2*self.rotation[0]*self.rotation[3], 2*self.rotation[0]**2 + 2*self.rotation[2]**2 - 1, 2*self.rotation[2]*self.rotation[3] + 2*self.rotation[0]*self.rotation[1] )
+        R3 = ( 2*self.rotation[1]*self.rotation[3] + 2*self.rotation[0]*self.rotation[2], 2*self.rotation[2]*self.rotation[3] - 2*self.rotation[0]*self.rotation[1], 2*self.rotation[0]**2 + 2*self.rotation[3]**2  - 1)
+        R = np.array( [R1, R2, R3], 'f')
+        dir_world = R @ vec(0.0,0.0,-1.0)
+        return normalized(dir_world)
