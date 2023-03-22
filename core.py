@@ -409,7 +409,7 @@ class Viewer(Node):
         #texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
         #mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
 
-        WATER_HEIGHT = -1 # Should be synced with water height from water.py
+        WATER_HEIGHT = -60 # Should be synced with water height from water.py
         WAVE_SPEED_FACTOR = 0.02
         reflection_clip_plane = (0.0,1.0,0.0,-WATER_HEIGHT+0.5) # 4th param = -(water height) + small overlap to prevent glitches
         refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
@@ -491,7 +491,16 @@ class Viewer(Node):
                 GL.glPolygonMode(GL.GL_FRONT_AND_BACK, next(self.fill_modes))
             if key == glfw.KEY_SPACE:
                 glfw.set_time(0.0)
-
+            if  key== glfw.KEY_UP:
+                self.trackball.pan((0,0), (0,-1))
+            if  key== glfw.KEY_DOWN:
+                self.trackball.pan((0,0), (0,1))
+            if  key== glfw.KEY_LEFT:
+                self.trackball.pan((0,0), (-1,0))
+            if  key== glfw.KEY_RIGHT:
+                self.trackball.pan((0,0), (1,0))
+            if key == glfw.KEY_O:
+                self.trackball.pan((0,0), (0,-1))    
             # call Node.key_handler which calls key_handlers for all drawables
             self.key_handler(key)
 

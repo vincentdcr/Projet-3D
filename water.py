@@ -13,7 +13,7 @@ class Water(Textured):
     """ Simple first textured object """
     def __init__(self, shader, map_width, map_height, waterFrameBuffers, dudv_file, normal_file):
 
-        WATER_HEIGHT = -1
+        WATER_HEIGHT = -60
 
         base_coords = np.array([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1]])
         scaled_coords = base_coords

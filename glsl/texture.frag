@@ -25,7 +25,7 @@ uniform vec3 fog_color;
 
 float computeFog(float d)
 {
-    const float FogMax = 250.0;
+    const float FogMax = 500.0;
     const float FogMin = 230.0;
 
     return clamp((1 - ((FogMax - d) / (FogMax - FogMin))), 0.0, 1.0);
