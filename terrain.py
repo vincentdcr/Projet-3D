@@ -4,7 +4,7 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 from core import  Mesh
 from texture import Texture, Textured
 from transform import normalized
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 # -------------- Terrain ---------------------------------
@@ -25,28 +25,31 @@ class Terrain(Textured):
         super().__init__(mesh, diffuse_map=texture)
 
 
-def generate_height_map(width, height, heightmap_file):
-    noise_map = []
 
-    MIN_HEIGHT = -32
-    MAX_HEIGHT = 32
+def generate_height_map(width, height, heightmap_file):
+    MIN_HEIGHT = -64
+    MAX_HEIGHT = 64
 
     im = Image.open(heightmap_file) 
-    heightmap = im.load()
-    for z in range(0,height): 
-        for x in range(0,width):
-            if (x>=im.size[0] or z>=im.size[1]):
-                noise_map.append (0) # not in height map value
-            else:
-                noise_map.append (np.interp(heightmap[x,z][0], [0,255], [MIN_HEIGHT,MAX_HEIGHT])) #map height map value
+    
+    heightmap = im.convert("L")  # convert to grayscale
+    
+    #heightmap = ImageOps.autocontrast(im, cutoff = 0)  # adjust contrast
+    
+    #heightmap = np.array(im) / 255  # convert to NumPy array and normalize pixel values
+    noise_map = np.zeros((height, width))
+    
+    for z in range(heightmap.height):
+        for x in range(heightmap.width):
+            noise_map[z,x] = np.interp(heightmap.getpixel((z,x)), [0,255], [MIN_HEIGHT,MAX_HEIGHT]) #map height map value    
     return noise_map
 
 
-def generate_vertices(width, height, noise_map): 
+def generate_vertices(width, height, noise_map): #à récup pour les coord de chaque point de la grille
     v = []
     for z in range(0,height): 
         for x in range(0,width):
-            v.append((-height/2 + x, noise_map[x + z*width], -width/2 + z))   
+            v.append((-height/2 + x, noise_map[x,z], -width/2 + z))   
     return np.asarray(v)
 
 def generate_indices(width, height):

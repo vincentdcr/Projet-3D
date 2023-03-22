@@ -9,6 +9,7 @@ from texture import Texture, Textured, CubeMapTex, TexturedCube
 from terrain import Terrain
 from transform import translate, vec, quaternion
 from animation import KeyFrameControlNode
+from GrassManager import Grass_blade
 
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
@@ -60,6 +61,7 @@ class CubeMapTexture(TexturedCube):
         texture = CubeMapTex(tex_path)
         texture2 = CubeMapTex(tex_path2)
         super().__init__(mesh, cube_map=texture, cube_map2=texture2)
+        
 
 # -------------- main program and scene setup --------------------------------
 def main():
@@ -69,18 +71,23 @@ def main():
     normalvizShader = Shader("glsl/normalviz.vert", "glsl/normalviz.frag", "glsl/normalviz.geom") 
     lightCubeShader = Shader("glsl/lightcube.vert", "glsl/lightcube.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
-
+    GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
+    
+    
+    
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
     translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(0,0,0)}
     rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
     scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
     keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
-    keynode.add(Node(load("cube.obj", lightCubeShader)))
+    #keynode.add(Node(load("cube.obj", lightCubeShader)))
     viewer.add(keynode)
-    viewer.add(Terrain(shader, "grass.png", 256, 256, "heightmap.png"))
+    #viewer.add(load("rock/Rock1/Rock1.obj", shader))
+    #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
+    viewer.add(Terrain(shader, "grass.png", 513, 513, "heightmapstests/Heightmap.png"))
     #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
-    # start rendering loop
+    #start rendering loop
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 
     viewer.run()   

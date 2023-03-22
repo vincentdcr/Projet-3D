@@ -196,6 +196,10 @@ class Trackball:
         """ Pan in camera's reference by a 2d vector factor of (new - old) """
         self.pos2d += (vec(new) - old) * 0.005 * self.distance
 
+    def up(self):
+        """ Move up vector by a 2d vector factor of (new - old) """
+        self.pos2d += -1 * 0.005 * self.distance
+        
     def view_matrix(self):
         """ View matrix transformation, including distance to target point """
         return translate(*self.pos2d, -self.distance) @ self.matrix()

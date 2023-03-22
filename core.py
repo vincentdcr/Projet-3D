@@ -393,7 +393,7 @@ class Viewer(Node):
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
-            print ()
+            #print ()
 
             self.main_light = ( 128 + np.sin(timer()) * 128, 35, 128)
             fog = (0.2,0.4,0.2)
@@ -422,7 +422,16 @@ class Viewer(Node):
                 GL.glPolygonMode(GL.GL_FRONT_AND_BACK, next(self.fill_modes))
             if key == glfw.KEY_SPACE:
                 glfw.set_time(0.0)
-
+            if  key== glfw.KEY_UP:
+                self.trackball.pan((0,0), (0,-1))
+            if  key== glfw.KEY_DOWN:
+                self.trackball.pan((0,0), (0,1))
+            if  key== glfw.KEY_LEFT:
+                self.trackball.pan((0,0), (-1,0))
+            if  key== glfw.KEY_RIGHT:
+                self.trackball.pan((0,0), (1,0))
+            if key == glfw.KEY_O:
+                self.trackball.pan((0,0), (0,-1))    
             # call Node.key_handler which calls key_handlers for all drawables
             self.key_handler(key)
 
