@@ -15,6 +15,9 @@ from waterFrameBuffer import WaterFrameBuffers
 from quad import Quad
 import water
 
+#text functions
+from renderText import render_text
+
 # initialize and automatically terminate glfw on exit
 glfw.init()
 atexit.register(glfw.terminate)
@@ -386,6 +389,11 @@ class Viewer(Node):
 
         #init global light
         self.main_light = (4,1,4)
+        
+        #init time counter
+        
+        self.previousTime = glfw.get_time()
+        self.framecount = 0
 
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
 
@@ -408,6 +416,16 @@ class Viewer(Node):
         fog = (1,0.2,0.2)
 
         while not glfw.window_should_close(self.win):
+            
+            currentTime = glfw.get_time()
+            self.framecount += 1
+            ## if a second has passed
+            if (currentTime- self.previousTime >=1):
+                print(self.framecount)
+                render_text(str(self.framecount), "textrender/arial.ttf", 36, 100, 100, (1.0, 0.0, 0.0))
+                self.framecount =0
+                self.previousTime = currentTime
+                
             # clear draw buffer and depth buffer (<-TP2)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
