@@ -409,11 +409,11 @@ class Viewer(Node):
         #texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
         #mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
 
-        WATER_HEIGHT = -60 # Should be synced with water height from water.py
+        WATER_HEIGHT = -40 # Should be synced with water height from water.py
         WAVE_SPEED_FACTOR = 0.02
         reflection_clip_plane = (0.0,1.0,0.0,-WATER_HEIGHT+0.5) # 4th param = -(water height) + small overlap to prevent glitches
         refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
-        fog = (1,0.2,0.2)
+        fog = (1,0.5,0.3)
 
         while not glfw.window_should_close(self.win):
                 

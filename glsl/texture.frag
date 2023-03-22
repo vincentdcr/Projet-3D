@@ -25,10 +25,8 @@ uniform vec3 fog_color;
 
 float computeFog(float d)
 {
-    const float FogMax = 500.0;
-    const float FogMin = 230.0;
-
-    return clamp((1 - ((FogMax - d) / (FogMax - FogMin))), 0.0, 1.0);
+    const float density = 0.0015;
+    return clamp( exp(-density*density * d*d), 0.5, 1.0);
 }
 
 void main() {
@@ -40,6 +38,6 @@ void main() {
     //vec3 I = k_a + k_d*max(dot(normalize(w_normal), lightDir ),0)+k_s*pow(max(dot(r, view_vector),0), s);
     vec3 texture = texture(diffuse_map, frag_tex_coords).rgb;
     vec3 light_texture = I * texture;
-    out_color = mix( vec4(light_texture,1), vec4(fog_color,1), computeFog(distance(w_camera_position, w_position))); // put back light_texture once normals are computed
+    out_color = mix(vec4(fog_color,1), vec4(light_texture,1), computeFog(distance(w_camera_position, w_position)));
 }
 

@@ -24,7 +24,16 @@ uniform float displacement_speed;
 // world camera position
 uniform vec3 w_camera_position;
 
+//Fog specified color
+uniform vec3 fog_color;
+
 const float DISTORSION_STRENGTH = 0.02;
+
+float computeFog(float d)
+{
+    const float density = 0.0015;
+    return clamp( exp(-density*density * d*d), 0.7, 1.0);
+}
 
 void main()
 {
@@ -62,7 +71,7 @@ void main()
 
     vec4 final_reflection = mix(reflection_color, refraction_color, refractivity_factor);
     vec4 final_color = mix(final_reflection, vec4(0.0,0.4,0.7,1.0), 0.1); //we add a bit of blue to the final texture
-    out_color = vec4(I,1.0) * final_color; 
-
+    vec4 lighted_color = vec4(I,1.0) * final_color; 
+    out_color = mix(vec4(fog_color,1), lighted_color, computeFog(distance(w_camera_position, w_position)));
 
 }
