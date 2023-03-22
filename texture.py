@@ -14,7 +14,10 @@ class Texture:
         self.type = tex_type
         try:
             # imports image as a numpy array in exactly right format
-            tex = Image.open(tex_file).convert('RGBA')
+            if(isinstance(tex_file,Image.Image)):
+                tex = tex_file
+            else:
+                tex = Image.open(tex_file).convert('RGBA')
             GL.glBindTexture(tex_type, self.glid)
             GL.glTexImage2D(tex_type, 0, GL.GL_RGBA, tex.width, tex.height,
                             0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, tex.tobytes())

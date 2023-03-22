@@ -16,7 +16,7 @@ from quad import Quad
 import water
 
 #text functions
-from renderText import render_text
+from renderText import RenderText
 
 # initialize and automatically terminate glfw on exit
 glfw.init()
@@ -416,15 +416,6 @@ class Viewer(Node):
         fog = (1,0.2,0.2)
 
         while not glfw.window_should_close(self.win):
-            
-            currentTime = glfw.get_time()
-            self.framecount += 1
-            ## if a second has passed
-            if (currentTime- self.previousTime >=1):
-                print(self.framecount)
-                render_text(str(self.framecount), "textrender/arial.ttf", 36, 100, 100, (1.0, 0.0, 0.0))
-                self.framecount =0
-                self.previousTime = currentTime
                 
             # clear draw buffer and depth buffer (<-TP2)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -474,6 +465,18 @@ class Viewer(Node):
             #             projection=self.trackball.projection_matrix(win_size),
             #             model=identity())
             # flush render commands, and swap draw buffers
+
+            #currentTime = glfw.get_time()
+            #self.framecount += 1
+            ## if a second has passed
+            #if (currentTime- self.previousTime >=1):
+            #    print(self.framecount)
+            #    self.framecount =0
+            #    RenderText(str(self.framecount), "textrender/arial.ttf", 36, quadShader).draw(view=self.trackball.view_matrix(),
+            #                                                                  projection=self.trackball.projection_matrix(win_size),
+            #                                                                  model=identity())
+            #    self.previousTime = currentTime
+
             glfw.swap_buffers(self.win)
 
             # Poll for and process events
