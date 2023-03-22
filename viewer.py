@@ -85,7 +85,7 @@ def main():
     viewer.add(keynode)
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    viewer.add(Terrain(shader, "grass.png", 513, 513, "heightmapstests/Heightmap.png"))
+    viewer.add(Terrain(shader, "grass.png", 513, 513, "heightmapstests/hm.png"))
     #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
     #start rendering loop
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
