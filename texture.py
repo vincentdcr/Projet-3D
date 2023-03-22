@@ -98,3 +98,22 @@ class TexturedCube:
             uniforms[name] = index
         self.drawable.draw(primitives=primitives, **uniforms)
         GL.glDepthFunc(GL.GL_LESS); # set depth function back to default
+
+class WaterTextured:
+    """ Drawable mesh decorator that activates and binds OpenGL textures """
+    def __init__(self, drawable, **textures):
+        self.drawable = drawable
+        self.textures = textures
+
+    def draw(self, primitives=GL.GL_TRIANGLES, **uniforms):
+        for index, (name, texture) in enumerate(self.textures.items()):
+            GL.glActiveTexture(GL.GL_TEXTURE0 + index)
+            if(isinstance(texture, np.uint32)): #for self generated texture from FBOS
+                GL.glBindTexture(GL.GL_TEXTURE_2D, texture)
+            else:
+                GL.glBindTexture(texture.type, texture.glid)
+            uniforms[name] = index
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        self.drawable.draw(primitives=primitives, **uniforms)
+        GL.glDisable(GL.GL_BLEND)

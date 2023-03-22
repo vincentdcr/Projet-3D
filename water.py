@@ -2,14 +2,14 @@
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 import core
-from texture import Texture, Textured
+from texture import Texture, WaterTextured
 from transform import normalized
 from PIL import Image
 from waterFrameBuffer import WaterFrameBuffers
 
 
 # -------------- Terrain ---------------------------------
-class Water(Textured):
+class Water(WaterTextured):
     """ Simple first textured object """
     def __init__(self, shader, map_width, map_height, waterFrameBuffers, dudv_file, normal_file):
 
@@ -28,5 +28,5 @@ class Water(Textured):
 
         dudv_tex = Texture(dudv_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
         normal_tex = Texture(normal_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        super().__init__(mesh, reflection_tex=waterFrameBuffers.getReflectionTexture(), refraction_tex=waterFrameBuffers.getRefractionTexture(), dudv_map=dudv_tex, normal_map=normal_tex)
+        super().__init__(mesh, reflection_tex=waterFrameBuffers.getReflectionTexture(), refraction_tex=waterFrameBuffers.getRefractionTexture(), depth_map=waterFrameBuffers.getRefractionDepthTexture(), dudv_map=dudv_tex, normal_map=normal_tex)
 

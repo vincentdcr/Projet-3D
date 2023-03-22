@@ -232,3 +232,6 @@ class Trackball:
         R = np.array( [R1, R2, R3], 'f')
         dir_world = R @ vec(0.0,0.0,-1.0)
         return normalized(dir_world)
+    
+    def getNearFarPlane(self):
+        return vec(0.1, 100) * self.distance  # proportion to dist

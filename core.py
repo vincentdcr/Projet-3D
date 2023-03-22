@@ -450,7 +450,7 @@ class Viewer(Node):
                       clipping_plane= refraction_clip_plane)
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
-
+            nearfar = self.trackball.getNearFarPlane()
             self.draw(view=self.trackball.view_matrix(),
                       projection=self.trackball.projection_matrix(win_size),
                       model=identity(),
@@ -458,7 +458,9 @@ class Viewer(Node):
                       light_dir=self.main_light,
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
-                      displacement_speed = timer() * WAVE_SPEED_FACTOR % 1)
+                      displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
+                      near = nearfar[0],
+                      far = nearfar[1])
             
             # Draw the FBOS texture in a quad in the corner of the screen
             #Quad(self.waterFrameBuffers.getReflectionTexture(), mesh).draw(view=self.trackball.view_matrix(),
