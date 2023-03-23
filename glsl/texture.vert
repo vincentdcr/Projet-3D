@@ -17,7 +17,7 @@ out vec3 tangent_light_pos;
 out vec3 tangent_view_pos;
 out vec3 tangent_frag_pos;
 
-out vec3 w_position;
+out vec3 w_position, w_normal;
 
 void main() {
     // Transform the position into world coordinates
@@ -26,7 +26,7 @@ void main() {
 
     // Transform the normal and tangent vectors into world coordinates
     mat3 normal_matrix = transpose(inverse(mat3(model)));
-    vec3 w_normal = normalize(normal_matrix * normal);
+    w_normal = normalize(normal_matrix * normal);
     vec3 w_tangent = normalize(normal_matrix * tangent);
     w_tangent = normalize(w_tangent - dot(w_tangent, w_normal) * w_normal);  // Gramm-Schmidt process to orthonormalize the tangent vec with the normal vec
 
@@ -44,7 +44,6 @@ void main() {
 
     // Set the clipping plane
     gl_ClipDistance[0] = dot(w_position4, clipping_plane);  // tell GLSL to cull every vertices above/below clipping plane
-    gl_Position = projection * view * w_position4;
-    frag_tex_coords = tex_coord;
+    frag_tex_coords = tex_coord ;
 
 }

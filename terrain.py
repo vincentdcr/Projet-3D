@@ -10,22 +10,24 @@ from PIL import Image, ImageOps
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, tex_file, normal_file, noise_file, map_width, map_height, heightmap_file):
+    def __init__(self, shader, tex_file, normal_file, tex_file2, normal_file2, noise_file, map_width, map_height, heightmap_file):
         self.file = tex_file
         height_map = generate_height_map(map_width, map_height, heightmap_file)
         vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
         normals = generate_normals(map_width, map_height, vertices) 
-        tangents = generate_tangents(vertices, indices, texcoords)
+        #tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
-        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals, tangent=tangents), index=indices, k_a=(0.6,0.6,0.6), k_d=(0.4,0.4,0.4), k_s=(0.3,0.2,0.2), s=256)
+        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.5,0.5,0.5), k_d=(0.7,0.7,0.7), k_s=(0.5,0.4,0.4), s=8)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         texture = Texture(tex_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
         normal_tex = Texture(normal_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        texture2 = Texture(tex_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        normal_tex2 = Texture(normal_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
         noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, noise_map=noise_tex)
+        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex)
 
  
 
@@ -118,25 +120,4 @@ def generate_tangents(vertices, indices, texcoords):
         tangents[i2] = tangents[i1]
         tangents[i3] = tangents[i1]
         j = j + 1
-    return tangents
-
-def generate_tangent(vertices, indices, texcoords):
-    tangents = np.zeros((len(vertices), 3))
-    for i in range(0, len(indices), 3):
-        i1, i2, i3 = indices[i], indices[i+1], indices[i+2]
-        v1, v2, v3 = vertices[i1], vertices[i2], vertices[i3]
-        uv1, uv2, uv3 = texcoords[i1], texcoords[i2], texcoords[i3]
-
-        delta_pos1 = v2 - v1
-        delta_pos2 = v3 - v1
-        delta_uv1 = uv2 - uv1
-        delta_uv2 = uv3 - uv1
-        print (v3, v1, delta_pos2)
-        r = 1.0 / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0])
-        print(delta_uv2[1] , delta_pos1, delta_uv1[1], delta_pos2)
-        tangents[i1] = (delta_pos1[0] * delta_uv2[1] - delta_pos2[0] * delta_uv1[1]) * r
-        tangents[i2] = (delta_pos1[1] * delta_uv2[1] - delta_pos2[1] * delta_uv1[1]) * r
-        tangents[i3] = (delta_pos1[2] * delta_uv2[1] - delta_pos2[2] * delta_uv1[1]) * r
-        print(tangents)
-    print(tangents)
     return tangents
