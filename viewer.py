@@ -69,6 +69,7 @@ def main():
     """ create a window, add scene objects, then run rendering loop """
     viewer = Viewer()
     shader = Shader("glsl/texture.vert", "glsl/texture.frag")
+    shaderTerrain = Shader("glsl/texture.vert", "glsl/texture_terrain.frag")
     normalvizShader = Shader("glsl/normalviz.vert", "glsl/normalviz.frag", "glsl/normalviz.geom") 
     lightCubeShader = Shader("glsl/lightcube.vert", "glsl/lightcube.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
@@ -83,12 +84,12 @@ def main():
     rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
     scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
     keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
-    #keynode.add(Node(load("cube.obj", lightCubeShader)))
+    keynode.add(Node(load("cube.obj", lightCubeShader)))
     viewer.add(keynode)
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    viewer.add(Terrain(shader, "grass.png", 513, 513, "heightmapstests/Heightmap.png"))
-    #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
+    viewer.add(Terrain(shaderTerrain, "terrain_texture/granite.png", "terrain_texture/granite_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png"))
+    #viewer.add(Terrain(normalvizShader,  "terrain_texture/brickwall.jpg", "terrain_texture/brickwall_normal.jpg", 5, 5, "heightmapstests/heightmaptest.png"))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 

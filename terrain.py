@@ -10,19 +10,22 @@ from PIL import Image, ImageOps
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, tex_file, map_width, map_height, heightmap_file):
+    def __init__(self, shader, tex_file, normal_file, noise_file, map_width, map_height, heightmap_file):
         self.file = tex_file
         height_map = generate_height_map(map_width, map_height, heightmap_file)
         vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
         normals = generate_normals(map_width, map_height, vertices) 
+        tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
-        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.75,0.75,0.75), k_d=(0.9,0.9,0.9), k_s=(0.2,0.3,0.2), s=16)
+        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals, tangent=tangents), index=indices, k_a=(0.6,0.6,0.6), k_d=(0.4,0.4,0.4), k_s=(0.3,0.2,0.2), s=256)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
-        texture = Texture(tex_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        super().__init__(mesh, diffuse_map=texture)
+        texture = Texture(tex_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        normal_tex = Texture(normal_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, noise_map=noise_tex)
 
  
 
@@ -39,8 +42,8 @@ def generate_height_map(width, height, heightmap_file):
     #heightmap = np.array(im) / 255  # convert to NumPy array and normalize pixel values
     noise_map = np.zeros((height, width))
     
-    for z in range(heightmap.height):
-        for x in range(heightmap.width):
+    for z in range(min(heightmap.height, height)):
+        for x in range(min(heightmap.width, width)):
             noise_map[z,x] = np.interp(heightmap.getpixel((z,x)), [0,255], [MIN_HEIGHT,MAX_HEIGHT]) #map height map value    
     return noise_map
 
@@ -63,30 +66,27 @@ def generate_indices(width, height):
                 # Don't create indices for right or top edge
                 continue
             else:
-                # Top left triangle of square
+                # Bottom left triangle of square
                 indices.append(pos)
                 indices.append(pos + width)
                 indices.append(pos + width + 1)
-                # Bottom right triangle of square
+                # Top right triangle of square
                 indices.append(pos + 1 + width)
                 indices.append(pos + 1)
                 indices.append(pos)
     return np.asarray(indices)
 
+# make sure that the wrap mode is set to repeat !
 def generate_texcoords(width, height):
     texcoords = []
-    i = 0
-    j = 0
     for z in range(0,height): 
         for x in range(0,width):
-            texcoords.append((i,j))
-            j = (j + 1) % 2 
-        i = (i + 1) % 2
+            texcoords.append((x,z))
     return np.asarray(texcoords)
 
 def generate_normals(width, height, position):
 
-    normals = np.full((width*height, 3), fill_value=np.array([0.0,6.0,0.0]))
+    normals = np.full((width*height, 3), fill_value=np.array([0.0,1.0,0.0]))
     for z in range(1,height-1): 
         for x in range(1,width-1):
             Yu       = position[x + (z+1)*width][1]
@@ -100,3 +100,43 @@ def generate_normals(width, height, position):
             normals[x+z*width] = normalized(normal)
     return normals # Normalization ??
 
+def generate_tangents(vertices, indices, texcoords):
+    tangents = np.zeros((len(vertices), 3))
+
+    # reshape the input arrays to be (num_triangles, 3, 3) and (num_triangles, 3, 2)
+    tri_verts = vertices[indices].reshape(-1, 3, 3)
+    tri_uvs = texcoords[indices].reshape(-1, 3, 2)
+    edge_1 = tri_verts[:,1] - tri_verts[:,0]
+    edge_2 = tri_verts[:,2] - tri_verts[:,0]
+    delta_uv1 = tri_uvs[:,1] - tri_uvs[:,0]
+    delta_uv2 = tri_uvs[:,2] - tri_uvs[:,0]
+    f = 1.0 / (delta_uv1[:,0] * delta_uv2[:,1] - delta_uv2[:,0] * delta_uv1[:,1])
+    j=0
+    for i in range(0, len(indices), 3):
+        i1, i2, i3 = indices[i], indices[i+1], indices[i+2]
+        tangents[i1] = f[j] * (delta_uv2[j,1] * edge_1[j] - delta_uv1[j,1] * edge_2[j])
+        tangents[i2] = tangents[i1]
+        tangents[i3] = tangents[i1]
+        j = j + 1
+    return tangents
+
+def generate_tangent(vertices, indices, texcoords):
+    tangents = np.zeros((len(vertices), 3))
+    for i in range(0, len(indices), 3):
+        i1, i2, i3 = indices[i], indices[i+1], indices[i+2]
+        v1, v2, v3 = vertices[i1], vertices[i2], vertices[i3]
+        uv1, uv2, uv3 = texcoords[i1], texcoords[i2], texcoords[i3]
+
+        delta_pos1 = v2 - v1
+        delta_pos2 = v3 - v1
+        delta_uv1 = uv2 - uv1
+        delta_uv2 = uv3 - uv1
+        print (v3, v1, delta_pos2)
+        r = 1.0 / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0])
+        print(delta_uv2[1] , delta_pos1, delta_uv1[1], delta_pos2)
+        tangents[i1] = (delta_pos1[0] * delta_uv2[1] - delta_pos2[0] * delta_uv1[1]) * r
+        tangents[i2] = (delta_pos1[1] * delta_uv2[1] - delta_pos2[1] * delta_uv1[1]) * r
+        tangents[i3] = (delta_pos1[2] * delta_uv2[1] - delta_pos2[2] * delta_uv1[1]) * r
+        print(tangents)
+    print(tangents)
+    return tangents

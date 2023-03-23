@@ -421,7 +421,7 @@ class Viewer(Node):
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
-            self.main_light = ( np.sin(timer()) * 128, 35, 0)
+            self.main_light = ( np.sin(timer()) * 200, 60, 0)
             # draw our scene objects
             self.waterFrameBuffers.bindReflectionFrameBuffer()
             GL.glEnable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
