@@ -80,7 +80,7 @@ def main():
     
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
-    translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(50,60,0)}
+    translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(256,80,0)}
     rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
     scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
     keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
@@ -88,7 +88,7 @@ def main():
     viewer.add(keynode)
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    viewer.add(Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png"))
+    viewer.add(Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer()))
     #viewer.add(Terrain(normalvizShader,  "terrain_texture/granite.png", "terrain_texture/granite_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png"))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))

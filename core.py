@@ -10,10 +10,12 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 import assimpcy                     # 3D resource loader
 
 # our transform functions
-from transform import Trackball, identity, lookat
+from transform import Trackball, identity, lookat, ortho, vec
 from waterFrameBuffer import WaterFrameBuffers
+from shadowFrameBuffer import ShadowFrameBuffer
 from quad import Quad
 import water
+from texture import Textured
 
 #text functions
 from renderText import RenderText
@@ -104,6 +106,7 @@ class Shader:
         GL.GL_FLOAT_MAT2: GL.glUniformMatrix2fv,
         GL.GL_FLOAT_MAT3: GL.glUniformMatrix3fv,
         GL.GL_FLOAT_MAT4: GL.glUniformMatrix4fv,
+        GL.GL_SAMPLER_2D_SHADOW: GL.glUniform1iv,
     }
 
 
@@ -396,18 +399,18 @@ class Viewer(Node):
         self.framecount = 0
 
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
-
+        self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
 
     def run(self):
         """ Main render loop for this OpenGL window """
 
-        #quadShader = Shader("glsl/fboviz.vert", "glsl/fboviz.frag")
+        quadShader = Shader("glsl/fboviz.vert", "glsl/fboviz.frag")
 
         # setup quad mesh for FBO vizualisation
-        #base_coords = ((-1, -1, 0), (1, -1, 0), (1, 1, 0), (-1, 1, 0))
-        #indices = np.array((1, 3, 0, 1 , 2 , 3), np.uint32)
-        #texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
-        #mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
+        base_coords = ((-1, -1, 0), (1, -1, 0), (1, 1, 0), (-1, 1, 0))
+        indices = np.array((1, 3, 0, 1 , 2 , 3), np.uint32)
+        texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
+        mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
 
         WATER_HEIGHT = -40 # Should be synced with water height from water.py
         WAVE_SPEED_FACTOR = 0.02
@@ -421,8 +424,16 @@ class Viewer(Node):
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
-            self.main_light = ( np.sin(timer()) * 200, 60, 0)
+            self.main_light = ( 256, 80, 0)
             # draw our scene objects
+            self.shadowFrameBuffer.bindFrameBuffer()
+            self.draw(view=self.compute_view_matrix_for_shadow_mapping(self.main_light),
+                      projection=self.compute_projection_matrix_for_shadow_mapping(),
+                      model=identity(),
+                      draw_water_flag = False,
+                      light_dir=self.main_light)
+            self.shadowFrameBuffer.unbindCurrentFrameBuffer()
+
             self.waterFrameBuffers.bindReflectionFrameBuffer()
             GL.glEnable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
@@ -460,12 +471,10 @@ class Viewer(Node):
                       time_of_day = self.getCurrentTimeOfDay(),
                       displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
                       near = nearfar[0],
-                      far = nearfar[1])
-            
-            # Draw the FBOS texture in a quad in the corner of the screen
-            #Quad(self.waterFrameBuffers.getReflectionTexture(), mesh).draw(view=self.trackball.view_matrix(),
-            #             projection=self.trackball.projection_matrix(win_size),
-            #             model=identity())
+                      far = nearfar[1],
+                      light_space_matrix = self.compute_projection_matrix_for_shadow_mapping() @ self.compute_view_matrix_for_shadow_mapping(self.main_light))
+            #Draw the FBOS texture in a quad in the corner of the screen
+            Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
             # flush render commands, and swap draw buffers
 
             #currentTime = glfw.get_time()
@@ -534,6 +543,9 @@ class Viewer(Node):
     
     def getWaterFrameBuffers(self):
         return self.waterFrameBuffers
+    
+    def getShadowFrameBuffer(self):
+        return self.shadowFrameBuffer
 
     def compute_view_matrix_for_reflection(self, cam_pos):
         invertedDirection = self.trackball.getDirectionVector()
@@ -541,3 +553,10 @@ class Viewer(Node):
         lookAtPosition = cam_pos[:3] + self.trackball.distance * invertedDirection
         return lookat(cam_pos[:3], lookAtPosition, (0.0,1.0,0.0))
     
+    def compute_view_matrix_for_shadow_mapping(self, light_pos):
+        return lookat(vec(light_pos), vec(0.0,0.0,0.0), (0.0,1.0,0.0))
+
+    def compute_projection_matrix_for_shadow_mapping(self):
+        near_plane = 0.1
+        far_plane = 600
+        return ortho(-256, 256, -256, 256, near_plane, far_plane)

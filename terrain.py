@@ -5,12 +5,13 @@ from core import  Mesh
 from texture import Texture, Textured
 from transform import normalized
 from PIL import Image, ImageOps
+from shadowFrameBuffer import ShadowFrameBuffer
 
-
+ 
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, tex_file, normal_file, tex_file2, normal_file2, noise_file, map_width, map_height, heightmap_file):
+    def __init__(self, shader, tex_file, normal_file, tex_file2, normal_file2, noise_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
         self.file = tex_file
         height_map = generate_height_map(map_width, map_height, heightmap_file)
         vertices = generate_vertices(map_width, map_height, height_map)
@@ -27,7 +28,7 @@ class Terrain(Textured):
         texture2 = Texture(tex_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
         normal_tex2 = Texture(normal_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
         noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex)
+        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
 
  
 
