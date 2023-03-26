@@ -6,10 +6,12 @@ uniform sampler2D refraction_tex;
 uniform sampler2D depth_map;
 uniform sampler2D dudv_map;
 uniform sampler2D normal_map;
+uniform sampler2DShadow shadow_map;
 
 in vec4 clip_space;
 in vec3 w_position;   // in world coodinates
 in vec2 frag_tex_coords;
+in vec4 frag_tex_light_space_coords; 
 
 // light dir, in world coordinates
 uniform vec3 light_dir;
@@ -45,6 +47,28 @@ float computeDepth(float depth, float treshold)
 {
     return clamp(depth / treshold , 0.0, 1.0);
 }
+
+
+float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lightDir)
+{
+    float bias = max(0.2 * (1.0 - dot(normal, lightDir)), 0.001);
+
+    // perspective divide 
+    vec3 proj_coords = frag_tex_light_space_coords.xyz / frag_tex_light_space_coords.w;
+    // transform from [-1,1] to [0,1] range
+    proj_coords = proj_coords * 0.5 + 0.5;
+    // get depth of current fragment from light's perspective
+    float frag_depth = proj_coords.z - bias;
+    // check whether current frag pos is in shadow by comparing the closest depth with the fragment depth 
+    // (returns 1.0 if frag_depth is higher than the depth contained in the shadow map = in shadow)
+    // we're getting a free PCF 2x2 thanks to the linear filtering of the shadow map
+    float shadow = texture(shadow_map, vec3(proj_coords.xy,frag_depth)); 
+  
+    if(frag_depth > 1.0) { // prevent fragment outside frustum from being shadowed
+        shadow = 0.0;
+    }
+    return shadow;
+} 
 
 void main()
 {
@@ -87,7 +111,10 @@ void main()
     vec3 lightDir = normalize(light_dir - w_position);
     vec3 r = reflect(-lightDir, normal);
     vec3 view_vector =normalize(w_camera_position - w_position);
-    vec3 I = k_a + k_d*max(dot(normal, lightDir ),0)+k_s*pow(max(dot(r, view_vector),0), s);
+    float shadow = (1 - shadow_calculation(frag_tex_light_space_coords, normal, lightDir));
+    vec3 diffuse = k_d*max(dot(normal, lightDir ),0) * shadow;
+    vec3 specular = k_s*pow(max(dot(r, view_vector),0), s) * shadow;
+    vec3 I = k_a + diffuse + specular;
 
     //finalize the lighting, reflection/refraction and compute the final color of the frag 
     float refractivity_factor = dot(view_vector, normal); //fresnel effect

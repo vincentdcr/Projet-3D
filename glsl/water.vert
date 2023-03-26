@@ -8,10 +8,12 @@ in vec2 tex_coord;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 light_space_matrix;
 
 out vec4 clip_space;
 out vec3 w_position;   // in world coordinates
 out vec2 frag_tex_coords;
+out vec4 frag_tex_light_space_coords; 
 
 
 void main() {
@@ -23,4 +25,8 @@ void main() {
     // tell OpenGL how to transform the vertex to clip coordinates
     clip_space = projection * view * model * vec4(position, 1);
     gl_Position = clip_space;
+
+
+    //compute vertex pos in light space
+    frag_tex_light_space_coords = light_space_matrix * w_position4;
 }
