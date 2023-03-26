@@ -22,7 +22,7 @@ uniform vec3 fog_color;
 float computeFog(float d)
 {
     const float density = 0.0015;
-    return clamp( exp(-density*density * d*d), 0.5, 1.0);
+    return clamp( exp(-density*density * d*d), 0.75, 1.0);
 }
 
 void main() {

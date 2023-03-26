@@ -23,7 +23,7 @@ class Water(WaterTextured):
         indices = np.array((1, 0, 3, 1 , 3 , 2), np.uint32)
         texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
         # setup plane mesh to be textured
-        mesh = core.Mesh(shader, attributes=dict(position=scaled_coords, tex_coord=texcoords), index=indices, k_a=(0.6,0.6,0.6), k_d=(0.2,0.2,0.2), k_s=(1.0,0.6,0.4), s=8)
+        mesh = core.Mesh(shader, attributes=dict(position=scaled_coords, tex_coord=texcoords), index=indices, k_a=(0.1,0.1,0.1), k_d=(0.4,0.4,0.4), k_s=(1.0,0.9,0.8), s=16)
 
 
         dudv_tex = Texture(dudv_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)

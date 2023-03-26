@@ -32,8 +32,8 @@ const float TILE_SCALE = 2.0;
 
 float computeFog(float d)
 {
-    const float density = 0.0015;
-    return clamp( exp(-density*density * d*d), 0.5, 1.0);
+    const float density = 0.001;
+    return clamp( exp(-density*density * d*d), 0.75, 1.0);
 }
 
 float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lightDir)
@@ -85,10 +85,10 @@ vec3 textureNoTile(sampler2D map, vec2 x)
 
 
 
-void main() {
+void main() { //with GPU Gem 3 UDN blend implementation 
     // compute blendWeights according to the world normal of the fragment
     vec3 blend_weights = pow (abs(w_normal), BLEND_SHARPNESS);
-    // compute the normalize sum (x+y+z=1) of our blend mask
+    // compute the normalized sum (x+y+z=1) of our blend mask
     blend_weights /= dot(blend_weights, vec3(1.0,1.0,1.0));
 
     // UVs for axis based on world position of frag
@@ -105,7 +105,7 @@ void main() {
     vec3 normalY = vec3(tangent_normal_y.x, 0.0, tangent_normal_y.y);
     vec3 normalZ = vec3(tangent_normal_z.xy, 0.0);
 
-        // blend normals and add to world normal
+    // blend normals and add to world normal
     vec3 normal = normalize( normalX.xyz * blend_weights.x + normalY.xyz * blend_weights.y + 
                              normalZ.xyz * blend_weights.z + w_normal
                             );
@@ -124,6 +124,8 @@ void main() {
     vec3 specular = k_s*pow(max(dot(r, view_vector),0), s) * shadow;
     vec3 I = k_a + diffuse + specular;
     vec3 light_texture = I * texture;
+
+    // add the fog to the final fragment color
     out_color = mix(vec4(fog_color,1), vec4(light_texture,1), computeFog(distance(w_camera_position, w_position)));
 }
 

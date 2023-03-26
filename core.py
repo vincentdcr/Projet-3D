@@ -421,7 +421,7 @@ class Viewer(Node):
         WAVE_SPEED_FACTOR = 0.02
         reflection_clip_plane = (0.0,1.0,0.0,-WATER_HEIGHT+0.5) # 4th param = -(water height) + small overlap to prevent glitches
         refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
-        fog = (1,0.5,0.3)
+        fog = (0.75,0.4,0.25)
 
         while not glfw.window_should_close(self.win):
 
