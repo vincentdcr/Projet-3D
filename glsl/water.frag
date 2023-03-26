@@ -12,6 +12,7 @@ in vec4 clip_space;
 in vec3 w_position;   // in world coodinates
 in vec2 frag_tex_coords;
 in vec4 frag_tex_light_space_coords; 
+in float out_of_shadow_area_factor;
 
 // light dir, in world coordinates
 uniform vec3 light_dir;
@@ -49,9 +50,10 @@ float computeDepth(float depth, float treshold)
 }
 
 
+
 float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lightDir)
 {
-    float bias = max(0.2 * (1.0 - dot(normal, lightDir)), 0.001);
+    float bias = max(0.02 * (1.0 - dot(normal, lightDir)), 0.001);
 
     // perspective divide 
     vec3 proj_coords = frag_tex_light_space_coords.xyz / frag_tex_light_space_coords.w;
@@ -63,11 +65,7 @@ float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lig
     // (returns 1.0 if frag_depth is higher than the depth contained in the shadow map = in shadow)
     // we're getting a free PCF 2x2 thanks to the linear filtering of the shadow map
     float shadow = texture(shadow_map, vec3(proj_coords.xy,frag_depth)); 
-  
-    if(frag_depth > 1.0) { // prevent fragment outside frustum from being shadowed
-        shadow = 0.0;
-    }
-    return shadow;
+    return shadow * out_of_shadow_area_factor;
 } 
 
 void main()

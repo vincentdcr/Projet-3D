@@ -404,7 +404,7 @@ class Viewer(Node):
 
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
         self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
-        self.shadow_map_manager = ShadowMapManager(30.0,1.0,15.0)
+        self.shadow_map_manager = ShadowMapManager(10.0,1.0,15.0, 200.0)
 
     def run(self):
         """ Main render loop for this OpenGL window """
@@ -433,15 +433,17 @@ class Viewer(Node):
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
-            self.main_light = ( 256 * np.cos(timer() / self.DAY_TIME), 256 * np.abs(np.sin(timer () / self.DAY_TIME)), np.abs(256 * np.sin(timer() / self.DAY_TIME)) )
-            print(self.main_light)
+            self.main_light = ( 256 * np.cos(timer() / self.DAY_TIME), 256 * np.abs(np.sin(timer () / self.DAY_TIME)), 
+                               np.abs(256 * np.sin(timer() / self.DAY_TIME)) )
             cam_pos = np.linalg.inv(self.camera.view_matrix())[:, 3]
 
 
             # draw our scene objects
             self.shadowFrameBuffer.bindFrameBuffer()
             GL.glEnable(GL.GL_DEPTH_CLAMP) # so that object in front of the frustum can still cast shadows
-            light_view, light_projection = self.shadow_map_manager.compute_matrices_for_shadow_mapping(self.main_light, self.camera, cam_pos)
+            light_view, light_projection = self.shadow_map_manager.compute_matrices_for_shadow_mapping(self.main_light, 
+                                                                                                       self.camera, cam_pos,
+                                                                                                       win_size)
  
             self.draw(view=light_view,
                       projection=light_projection,
@@ -464,7 +466,8 @@ class Viewer(Node):
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
                       clipping_plane= reflection_clip_plane,
-                      light_space_matrix = light_projection @ light_view)
+                      light_space_matrix = light_projection @ light_view,
+                      shadow_distance=self.shadow_map_manager.getShadowDistance())
             self.camera.underwater_cam(WATER_HEIGHT)
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             self.waterFrameBuffers.bindRefractionFrameBuffer()
@@ -477,7 +480,8 @@ class Viewer(Node):
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
                       clipping_plane= refraction_clip_plane,
-                      light_space_matrix = light_projection @ light_view)
+                      light_space_matrix = light_projection @ light_view,
+                      shadow_distance=self.shadow_map_manager.getShadowDistance())
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             self.draw(view=self.camera.view_matrix(),
@@ -490,7 +494,8 @@ class Viewer(Node):
                       displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
                       near = self.camera.near_clip,
                       far = self.camera.far_clip,           
-                      light_space_matrix = light_projection @ light_view)
+                      light_space_matrix = light_projection @ light_view,
+                      shadow_distance=self.shadow_map_manager.getShadowDistance())
 
             #Draw the FBOS texture in a quad in the corner of the screen
             Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())

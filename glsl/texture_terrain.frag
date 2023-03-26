@@ -17,6 +17,7 @@ uniform vec3 k_s;
 uniform float s;
 
 in vec3 w_position, w_normal;
+in float out_of_shadow_area_factor;
 
 
 uniform vec3 w_camera_position, light_dir;
@@ -50,10 +51,7 @@ float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lig
     // we're getting a free PCF 2x2 thanks to the linear filtering of the shadow map
     float shadow = texture(shadow_map, vec3(proj_coords.xy,frag_depth)); 
   
-    if(frag_depth > 1.0) { // prevent fragment outside frustum from being shadowed
-        shadow = 0.0;
-    }
-    return shadow;
+    return shadow * out_of_shadow_area_factor;
 } 
 
 float sum( vec3 v ) { return v.x+v.y+v.z; }

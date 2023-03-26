@@ -3,7 +3,7 @@ from transform import ortho, lookat, vec, normalized, rotate, translate, identit
 from math import acos, sqrt, atan, radians
 
 class ShadowMapManager():
-    def __init__(self, offset=30.0, mov_tresh=1.0, angle_tresh=15.0):
+    def __init__(self, offset=10.0, mov_tresh=1.0, angle_tresh=15.0, shadow_distance=192.0):
         self.ortho = ortho(-1,1,-1,1,0.1,50)
         self.l = 0 
         self.r = 0 
@@ -18,11 +18,12 @@ class ShadowMapManager():
         self.cam_pitch_prev = None
         self.treshold_movement = mov_tresh
         self.treshold_angle = angle_tresh
+        self.far_dist = shadow_distance
 
     def compute_view_matrix_for_shadow_mapping(self, light_pos, center):
         return lookat(vec(light_pos), vec(center), vec(0,1,0))
 
-    def compute_matrices_for_shadow_mapping(self, light_pos, cam, cam_pos):
+    def compute_matrices_for_shadow_mapping(self, light_pos, cam, cam_pos, win):
         
         # Add this if the sun is not a moving object, the shadows will be more stable
         # if self.cam_pos_prev is not None and np.linalg.norm(cam_pos - self.cam_pos_prev) < self.treshold_movement and np.linalg.norm((cam.yaw + cam.pitch) - (self.cam_yaw_prev + self.cam_pitch_prev)) < radians(self.treshold_angle):
@@ -34,18 +35,13 @@ class ShadowMapManager():
         self.cam_yaw_prev = cam.yaw
         self.cam_pitch_prev = cam.pitch
 
-
-        SCR_WIDTH = 1280
-        SCR_HEIGHT = 720
-        ar = SCR_WIDTH / SCR_HEIGHT
-        fov = 70
+        ar = win[0] / win[1]
         near_dist = 0.1
-        far_dist = 320.0
-        h_near = 2 * np.tan(fov / 2) * near_dist
+        h_near = 2 * np.tan(radians(cam.fov) / 2) * near_dist
         w_near = h_near * ar
-        h_far = 2 * np.tan(fov / 2) * far_dist
+        h_far = 2 * np.tan(radians(cam.fov) / 2) * self.far_dist
         w_far = h_far * ar 
-        center_far = cam_pos[:3] + cam.front * far_dist
+        center_far = cam_pos[:3] + cam.front * self.far_dist
 
         top_left_far = center_far + (cam.up * h_far / 2) - (cam.right * w_far / 2)
         top_right_far = center_far + (cam.up * h_far / 2) + (cam.right * w_far / 2)
@@ -96,3 +92,6 @@ class ShadowMapManager():
         self.ortho = ortho(l, r, b, t, n, f)
         self.view = light_view
         return light_view, self.ortho
+    
+    def getShadowDistance(self):
+        return self.far_dist + self.OFFSET
