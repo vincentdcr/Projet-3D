@@ -9,7 +9,7 @@ class Texture:
     """ Helper class to create and automatically destroy textures """
     def __init__(self, tex_file, wrap_mode=GL.GL_REPEAT,
                  mag_filter=GL.GL_LINEAR, min_filter=GL.GL_LINEAR_MIPMAP_LINEAR,
-                 tex_type=GL.GL_TEXTURE_2D):
+                 tex_type=GL.GL_TEXTURE_2D, gamma_correction=True):
         self.glid = GL.glGenTextures(1)
         self.type = tex_type
         try:
@@ -19,7 +19,11 @@ class Texture:
             else:
                 tex = Image.open(tex_file).convert('RGBA')
             GL.glBindTexture(tex_type, self.glid)
-            GL.glTexImage2D(tex_type, 0, GL.GL_RGBA, tex.width, tex.height,
+            if(gamma_correction):
+                GL.glTexImage2D(tex_type, 0, GL.GL_SRGB_ALPHA, tex.width, tex.height,
+                            0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, tex.tobytes())
+            else:
+                GL.glTexImage2D(tex_type, 0, GL.GL_RGBA, tex.width, tex.height,
                             0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, tex.tobytes())
             GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_S, wrap_mode)
             GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_T, wrap_mode)
@@ -50,7 +54,7 @@ class CubeMapTex:
                     # imports image as a numpy array in exactly right format
                     tex = Image.open(tex_file).convert('RGBA')
                     GL.glBindTexture(self.type, self.glid)
-                    GL.glTexImage2D(GL.GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL.GL_RGBA, tex.width, tex.height,
+                    GL.glTexImage2D(GL.GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL.GL_SRGB_ALPHA, tex.width, tex.height,
                                     0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, tex.tobytes())
                     GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
                     GL.glTexParameteri(GL.GL_TEXTURE_CUBE_MAP, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);

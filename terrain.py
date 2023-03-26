@@ -20,14 +20,14 @@ class Terrain(Textured):
         normals = generate_normals(map_width, map_height, vertices) 
         #tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
-        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.5,0.5,0.5), k_d=(0.7,0.7,0.7), k_s=(0.5,0.4,0.4), s=8)
+        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.5,0.5,0.5), k_d=(0.7,0.7,0.7), k_s=(0.9,0.8,0.8), s=8)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         texture = Texture(tex_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex = Texture(normal_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        normal_tex = Texture(normal_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
         texture2 = Texture(tex_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex2 = Texture(normal_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        normal_tex2 = Texture(normal_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
         super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
 
  

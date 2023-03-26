@@ -109,7 +109,7 @@ void main() {
     vec3 normal = normalize( normalX.xyz * blend_weights.x + normalY.xyz * blend_weights.y + 
                              normalZ.xyz * blend_weights.z + w_normal
                             );
-    vec3 color_y = textureNoTile(diffuse_map2, y_UV).rgb + vec3(0.0,0.02,0.0);
+    vec3 color_y = textureNoTile(diffuse_map2, y_UV).rgb;
     vec3 color_x = textureNoTile (diffuse_map, x_UV).rgb;
     vec3 color_z = textureNoTile(diffuse_map, z_UV).rgb;
 

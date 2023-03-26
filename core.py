@@ -484,6 +484,8 @@ class Viewer(Node):
                       shadow_distance=self.shadow_map_manager.getShadowDistance())
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
+
+            GL.glEnable(GL.GL_FRAMEBUFFER_SRGB) # for gamma correction
             self.draw(view=self.camera.view_matrix(),
                       projection=self.camera.projection_matrix(win_size),
                       model=identity(),
@@ -496,6 +498,7 @@ class Viewer(Node):
                       far = self.camera.far_clip,           
                       light_space_matrix = light_projection @ light_view,
                       shadow_distance=self.shadow_map_manager.getShadowDistance())
+            GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
 
             #Draw the FBOS texture in a quad in the corner of the screen
             Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())

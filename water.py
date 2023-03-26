@@ -26,7 +26,7 @@ class Water(WaterTextured):
         mesh = core.Mesh(shader, attributes=dict(position=scaled_coords, tex_coord=texcoords), index=indices, k_a=(0.6,0.6,0.6), k_d=(0.2,0.2,0.2), k_s=(1.0,0.6,0.4), s=8)
 
 
-        dudv_tex = Texture(dudv_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex = Texture(normal_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+        dudv_tex = Texture(dudv_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        normal_tex = Texture(normal_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
         super().__init__(mesh, reflection_tex=waterFrameBuffers.getReflectionTexture(), refraction_tex=waterFrameBuffers.getRefractionTexture(), depth_map=waterFrameBuffers.getRefractionDepthTexture(), dudv_map=dudv_tex, normal_map=normal_tex)
 

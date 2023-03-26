@@ -1,6 +1,6 @@
 import numpy as np 
-from transform import ortho, lookat, vec, normalized, rotate, translate, identity
-from math import acos, sqrt, atan, radians
+from transform import ortho, lookat, vec
+from math import radians
 
 class ShadowMapManager():
     def __init__(self, offset=10.0, mov_tresh=1.0, angle_tresh=15.0, shadow_distance=192.0):
