@@ -6,10 +6,11 @@ import glfw                         # lean window system wrapper for OpenGL
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Shader, Viewer, Mesh, load, Node
 from texture import Texture, Textured, CubeMapTex, TexturedCube
-from terrain import Terrain
+from terrain import Terrain, generate_vertice_map
 from transform import translate, vec, quaternion
 from animation import KeyFrameControlNode
 from water import Water
+from Arbre import TexturedPineTree, TexturedTree, Treemapping
 from GrassManager import Grass_blade
 
 # -------------- Example textured plane class ---------------------------------
@@ -87,8 +88,18 @@ def main():
     viewer.add(keynode)
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    viewer.add(Terrain(shader, "grass.png", 513, 513, "heightmapstests/Heightmap.png"))
-    #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
+    terrain = Terrain(shader, "grass.png", 513, 513, "heightmapstests/Heightmap.png")
+    vertices = terrain.getVertices()
+    viewer.add(terrain)
+    
+    
+    viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/tronc.png", 500, ))
+    #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png")),
+    
+    
+    
+    TextureTronc = Texture("textures_wood/tronc.png", GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
+    TexturedTree = Texture("textures_wood/pineleaf2.png",  GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 

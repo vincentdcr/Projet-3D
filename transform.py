@@ -10,6 +10,9 @@ from numbers import Number  # useful to check type of arg: scalar or vector?
 
 # external module
 import numpy as np          # matrices, vectors & quaternions are numpy arrays
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
 
 
 # Some useful functions on vectors -------------------------------------------
@@ -174,6 +177,7 @@ def quaternion_slerp(q0, q1, fraction):
 
 
 # a trackball class based on provided quaternion functions -------------------
+# OLD VERSION - SEE LATER FOR VIEWPORT VERSION
 class Trackball:
     """Virtual trackball for 3D scene viewing. Independent of window system."""
 
@@ -232,3 +236,111 @@ class Trackball:
         R = np.array( [R1, R2, R3], 'f')
         dir_world = R @ vec(0.0,0.0,-1.0)
         return normalized(dir_world)
+    
+## NEW VERSION - VIEWPORT VERSION
+class Camera:
+    """Camera class for 3D scene viewing. Independent of window system."""
+
+    def __init__(self, position=np.array([0, 0, 3]), target=np.array([0, 0, 0]), up=np.array([0, 1, 0])):
+        """ Build a new camera with specified position, target, and up vectors """
+        self.view_matrix = self.look_at(position, target, up)
+        self.position = position
+
+    def look_at(self, position, target, up):
+        """ Compute the view matrix using the camera position, target, and up vectors """
+        forward = normalized(target - position)
+        side = normalized(np.cross(forward, up))
+        up = np.cross(side, forward)
+
+        view_matrix = np.identity(4)
+        view_matrix[:3, 0] = side
+        view_matrix[:3, 1] = up
+        view_matrix[:3, 2] = -forward
+        view_matrix[:3, 3] = position
+        return view_matrix
+
+    def rotate(self, angle, axis):
+        """ Rotate the camera around the specified axis by the given angle """
+        rotation_matrix = self.get_rotation_matrix(angle, axis)
+        self.view_matrix = rotation_matrix @ self.view_matrix
+
+    def get_rotation_matrix(self, angle, axis):
+        """ Get a rotation matrix for the specified angle and axis """
+        axis = normalized(axis)
+        s = np.sin(angle)
+        c = np.cos(angle)
+        t = 1 - c
+        x, y, z = axis
+
+        rotation_matrix = np.array([
+            [t*x*x + c,   t*x*y - s*z, t*x*z + s*y, 0],
+            [t*x*y + s*z, t*y*y + c,   t*y*z - s*x, 0],
+            [t*x*z - s*y, t*y*z + s*x, t*z*z + c,   0],
+            [0,           0,           0,           1]
+        ])
+        return rotation_matrix
+
+    def translate(self, direction):
+        """ Translate the camera in the specified direction """
+        translation_matrix = self.get_translation_matrix(direction)
+        self.view_matrix = translation_matrix @ self.view_matrix
+
+    def get_translation_matrix(self, direction):
+        """ Get a translation matrix for the specified direction """
+        translation_matrix = np.identity(4)
+        translation_matrix[:3, 3] = direction
+        return translation_matrix
+
+    def set_position(self, position):
+        """ Set the camera position """
+        self.position = position
+        self.view_matrix[:3, 3] = position
+
+    def get_direction_vector(self):
+        """ Get the camera's direction vector """
+        forward = self.view_matrix[:3, 2]
+        return normalized(-forward)
+
+    def projection_matrix(self, winsize):
+        """ Projection matrix with z-clipping range """
+        z_range = np.array([0.1, 100])
+        return self.perspective(70, winsize[0] / winsize[1], z_range)
+
+    def perspective(self, fov, aspect, z_range):
+        """ Compute the perspective projection matrix """
+        near, far = z_range
+        f = 1 / np.tan(np.radians(fov / 2))
+        projection_matrix = np.array([
+            [f / aspect, 0, 0, 0],
+            [0, f, 0, 0],
+            [0, 0, (far + near) / (near - far), 2 * far * near / (near - far)],
+            [0, 0, -1, 0]
+        ])
+        return projection_matrix
+
+    def set_camera(self):
+        """ Set the camera transformation matrix """
+        glMatrixMode(GL_MODELVIEW)
+        glLoadMatrixf(self.view_matrix.transpose())
+
+    def set_projection(self, winsize):
+        """ Set the projection matrix """
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        projection_matrix = self.projection_matrix(winsize)
+        glLoadMatrixf(projection_matrix.transpose())
+
+    def get_screen_ray(self, mouse_x, mouse_y, winsize):
+        """ Get a ray from the camera through the specified screen point """
+        x = (2 * mouse_x / winsize[0]) - 1
+        y = 1 - (2 * mouse_y / winsize[1])
+        ndc = np.array([x, y, -1, 1])
+        clip = np.linalg.inv(self.projection_matrix(winsize)) @ ndc
+        clip /= clip[3]
+        view = np.linalg.inv(self.view_matrix)
+        eye = np.array([0, 0, 0, 1])
+        world = view @ clip
+        direction = normalized(world - eye)[:3]
+        return self.position, direction
+    
+    

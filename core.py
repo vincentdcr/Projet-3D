@@ -10,7 +10,7 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 import assimpcy                     # 3D resource loader
 
 # our transform functions
-from transform import Trackball, identity, lookat
+from transform import Trackball, identity, lookat #,Camera
 from waterFrameBuffer import WaterFrameBuffers
 from quad import Quad
 import water
@@ -366,6 +366,7 @@ class Viewer(Node):
 
         # initialize trackball
         self.trackball = Trackball()
+        #self.camera = Camera()
         self.mouse = (0, 0)
 
         # register event handlers
@@ -409,7 +410,7 @@ class Viewer(Node):
         #texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
         #mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
 
-        WATER_HEIGHT = -60 # Should be synced with water height from water.py
+        WATER_HEIGHT = -40 # Should be synced with water height from water.py
         WAVE_SPEED_FACTOR = 0.02
         reflection_clip_plane = (0.0,1.0,0.0,-WATER_HEIGHT+0.5) # 4th param = -(water height) + small overlap to prevent glitches
         refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
@@ -426,6 +427,8 @@ class Viewer(Node):
             self.waterFrameBuffers.bindReflectionFrameBuffer()
             GL.glEnable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
+            #cam_pos = self.camera.set_position()
+            
             cam_pos[1] = cam_pos[1] - 2*(cam_pos[1] - WATER_HEIGHT) #cam_pos - distance (same dist underwater)
             self.draw(view=self.compute_view_matrix_for_reflection(cam_pos),
                       projection=self.trackball.projection_matrix(win_size),
