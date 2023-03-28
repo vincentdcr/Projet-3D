@@ -9,6 +9,9 @@ import math                 # mainly for trigonometry functions
 from numbers import Number  # useful to check type of arg: scalar or vector?
 # external module
 import numpy as np          # matrices, vectors & quaternions are numpy arrays
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
 
 
 # Some useful functions on vectors -------------------------------------------
@@ -173,6 +176,7 @@ def quaternion_slerp(q0, q1, fraction):
 
 
 # a trackball class based on provided quaternion functions -------------------
+# OLD VERSION - SEE LATER FOR VIEWPORT VERSION
 class Trackball:
     """Virtual trackball for 3D scene viewing. Independent of window system."""
 

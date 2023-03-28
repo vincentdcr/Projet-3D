@@ -10,6 +10,7 @@ from terrain import Terrain
 from transform import translate, vec, quaternion
 from animation import KeyFrameControlNode
 from water import Water
+from arbre import Treemapping
 from GrassManager import Grass_blade
 
 # -------------- Example textured plane class ---------------------------------
@@ -88,10 +89,15 @@ def main():
     viewer.add(keynode)
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    viewer.add(Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
-                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer()))
+    terrain = Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
+                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
+
+    viewer.add(terrain)
     #viewer.add(Terrain(normalvizShader, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
     #                   "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer()))
+    vertices = terrain.getVertices()    
+    
+    viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/tronc.png", 30, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 

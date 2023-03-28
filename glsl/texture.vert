@@ -4,46 +4,42 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform vec4 clipping_plane;
-uniform vec3 light_dir;
-uniform vec3 w_camera_position;
+uniform mat4 light_space_matrix;
+
+uniform float shadow_distance;
 
 in vec3 position;
 in vec2 tex_coord;
 in vec3 normal;
-in vec3 tangent;
 
 out vec2 frag_tex_coords;
-out vec3 tangent_light_pos;
-out vec3 tangent_view_pos;
-out vec3 tangent_frag_pos;
+out vec4 frag_tex_light_space_coords; 
 
 out vec3 w_position, w_normal;
+out float out_of_shadow_area_factor;
+
+const float shadow_trans_dist = 10.0 ;
 
 void main() {
     // Transform the position into world coordinates
     vec4 w_position4 = model * vec4(position, 1.0);
     w_position = w_position4.xyz / w_position4.w;
-
-    // Transform the normal and tangent vectors into world coordinates
-    mat3 normal_matrix = transpose(inverse(mat3(model)));
-    w_normal = normalize(normal_matrix * normal);
-    vec3 w_tangent = normalize(normal_matrix * tangent);
-    w_tangent = normalize(w_tangent - dot(w_tangent, w_normal) * w_normal);  // Gramm-Schmidt process to orthonormalize the tangent vec with the normal vec
-
-    // Orthonormalize the tangent vector with the normal vector
-    vec3 w_bitangent = cross(w_tangent, w_normal);  //depending on the uv mapping, may need to be inverted
-
-    // Transform the light and camera positions into tangent space
-    mat3 TBN = transpose(mat3(w_tangent, w_bitangent, w_normal));    // transpose of ortho matrix = inverse matrix
-    tangent_light_pos = TBN * light_dir;
-    tangent_view_pos = TBN * w_camera_position;
-    tangent_frag_pos = TBN * w_position;
-
-    // Calculate the final position of the vertex
-    gl_Position = projection * view * w_position4;
+    w_normal = normalize( transpose(inverse(mat3(model))) * normal);
 
     // Set the clipping plane
     gl_ClipDistance[0] = dot(w_position4, clipping_plane);  // tell GLSL to cull every vertices above/below clipping plane
+    vec4 position_from_camera = view * w_position4;
+    gl_Position = projection * position_from_camera;
     frag_tex_coords = tex_coord ;
+
+    //compute vertex pos in light space
+    frag_tex_light_space_coords = light_space_matrix * w_position4;
+
+    // compute a transition period between shadowed / out of shadow area
+    // out_of_shadow_area_factor = 0.0 if outside area, 1.0 if before shadow_distance 
+    // and a value between 0 and 1 in the transition
+    float distance = length(position_from_camera) - (shadow_distance - shadow_trans_dist);
+    distance = distance / shadow_trans_dist;
+    out_of_shadow_area_factor = clamp (1.0-distance, 0.0, 1.0);
 
 }

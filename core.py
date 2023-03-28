@@ -10,7 +10,7 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 import assimpcy                     # 3D resource loader
 
 # our transform functions
-from transform import Trackball, identity, vec, FlyoutCamera
+from transform import identity, vec, FlyoutCamera
 from waterFrameBuffer import WaterFrameBuffers
 from shadowFrameBuffer import ShadowFrameBuffer
 from quad import Quad

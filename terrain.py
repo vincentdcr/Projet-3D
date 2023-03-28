@@ -14,13 +14,13 @@ class Terrain(Textured):
     def __init__(self, shader, tex_file, normal_file, tex_file2, normal_file2, noise_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
         self.file = tex_file
         height_map = generate_height_map(map_width, map_height, heightmap_file)
-        vertices = generate_vertices(map_width, map_height, height_map)
+        self.vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
-        normals = generate_normals(map_width, map_height, vertices) 
+        normals = generate_normals(map_width, map_height, self.vertices) 
         #tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
-        mesh = Mesh(shader, attributes=dict(position=vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
+        mesh = Mesh(shader, attributes=dict(position=self.vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         texture = Texture(tex_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
@@ -30,6 +30,8 @@ class Terrain(Textured):
         noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
         super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
 
+    def getVertices (self):
+        return self.vertices 
  
 
 def generate_height_map(width, height, heightmap_file):
@@ -77,6 +79,7 @@ def generate_indices(width, height):
                 indices.append(pos + 1 + width)
                 indices.append(pos + 1)
                 indices.append(pos)
+    
     return np.asarray(indices)
 
 # make sure that the wrap mode is set to repeat !
@@ -122,3 +125,4 @@ def generate_tangents(vertices, indices, texcoords):
         tangents[i3] = tangents[i1]
         j = j + 1
     return tangents
+
