@@ -17,7 +17,6 @@ from quad import Quad
 import water
 from texture import Textured
 from shadow_map_manager import ShadowMapManager
-
 #text functions
 from renderText import RenderText
 
@@ -198,7 +197,7 @@ class Node:
         for child in self.children:
             if (not isinstance(child, water.Water) or draw_water_flag):
                 child.draw(model=self.world_transform, **other_uniforms)
-
+            
     def key_handler(self, key):
         """ Dispatch keyboard events to children with key handler """
         for child in (c for c in self.children if hasattr(c, 'key_handler')):
@@ -299,12 +298,13 @@ def load(file, shader, tex_file=None, **params):
             k_s=mat.get('COLOR_SPECULAR', (1, 1, 1)),
             k_a=mat.get('COLOR_AMBIENT', (0.4, 0.4, 0.4)),
             s=mat.get('SHININESS', 32),
+            
         )
         attributes = dict(
             position=mesh.mVertices,
             normal=mesh.mNormals,
         )
-
+        print(mat)
         # ---- optionally add texture coordinates attribute if present
         if mesh.HasTextureCoords[0]:
             attributes.update(tex_coord=mesh.mTextureCoords[0])
@@ -368,10 +368,9 @@ class Viewer(Node):
         # make win's OpenGL context current; no OpenGL calls can happen before
         glfw.make_context_current(self.win)
 
-        # initialize trackball
+        # initialize FlyoutCamera
         self.camera = FlyoutCamera(position=vec(0.0,0.0,1.0))
         self.last_time = timer()
-        self.key_input = False
         self.mouse = (0, 0)
 
         # register event handlers
@@ -405,6 +404,9 @@ class Viewer(Node):
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
         self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
         self.shadow_map_manager = ShadowMapManager(10.0,1.0,15.0, 200.0)
+        
+        # inti shader used for animation
+        self.shader = Shader("glsl/texture.vert", "glsl/texture.frag")
 
     def run(self):
         """ Main render loop for this OpenGL window """
@@ -524,7 +526,8 @@ class Viewer(Node):
     def on_key(self, _win, key, _scancode, action, _mods):
         """ 'Q' or 'Escape' quits """
         if action == glfw.PRESS or action == glfw.REPEAT:
-            self.key_input = True
+            self.key_handler(key)
+            print("POSITION ACTUELLE CAMERA : ", self.camera.position)
             if key == glfw.KEY_ESCAPE or key == glfw.KEY_Q:
                 glfw.set_window_should_close(self.win, True)
             if key == glfw.KEY_Z:
@@ -543,6 +546,10 @@ class Viewer(Node):
                 self.camera.move_keyboard("up", self.delta_time)
             if  key== glfw.KEY_X:
                 self.camera.move_keyboard("down", self.delta_time) 
+        
+                
+    
+                                
         elif action == glfw.RELEASE:
             if key == glfw.KEY_W or key == glfw.KEY_S or key == glfw.KEY_A or key == glfw.KEY_D or key == glfw.KEY_SPACE or key == glfw.KEY_X :
                 self.camera.stop_keyboard()

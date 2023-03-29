@@ -12,7 +12,7 @@ from animation import KeyFrameControlNode
 from water import Water
 from tree import Treemapping
 from GrassManager import Grass_blade
-
+from animation_rocks import RockTime
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
     """ Simple first textured object """
@@ -75,22 +75,26 @@ def main():
     lightCubeShader = Shader("glsl/lightcube.vert", "glsl/lightcube.frag")
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
     waterShader = Shader("glsl/water.vert", "glsl/water.frag")
-    GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
+    reflectionShader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag") # reflection par rapport a la skybox
+    #GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
     
     
     
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
-    translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(256,80,0)}
-    rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
-    scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
-    keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
-    keynode.add(Node(load("cube.obj", lightCubeShader)))
-    viewer.add(keynode)
+    # translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(256,80,0)}
+    # rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
+    # scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
+    # keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
+    # keynode.add(Node(load("cube.obj", lightCubeShader)))
+    # viewer.add(keynode)
+    
+    
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
     terrain = Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
-                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
+                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png",
+                       513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
 
     viewer.add(terrain)
     #viewer.add(Terrain(normalvizShader, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
@@ -98,6 +102,8 @@ def main():
     vertices = terrain.getVertices()    
     
     viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/bark.jpg", 500, viewer.getShadowFrameBuffer().getDepthTexture()))
+    viewer.add(RockTime(shader, reflectionShader))
+    #viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/tronc.png", 30, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
 
