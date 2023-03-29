@@ -67,7 +67,6 @@ class GenerateTrunks(Textured):
         index = []
         trunk_indices = self.generate_trunk_indices()
         self.trunk_final_height = []
-
         for i in range(0, nb_gen):
             height_offset = random.uniform(0.75,1.25)
             self.trunk_final_height.append(height_offset*self.height)
@@ -84,15 +83,17 @@ class GenerateTrunks(Textured):
 
 
     def generate_trunk_tex_coords(self, size):
-        tex_coords = np.empty((size,2)) # (0,0)
-        tex_coords[0] = [0,0]
+        tex_coords = np.empty((size+2,2)) # (0,0)
+        tex_coords[0] = [1, 1]
         # top
         for i in range(0, self.divisions):
             tex_coords[i+1] = [i / self.divisions, 0]
-        tex_coords[self.divisions+1] =  [1, 1]
+        tex_coords[self.divisions+1] =  [0, 0]
         #bottom
         for i in range(0, self.divisions):
             tex_coords[self.divisions+2+i] =  [i / self.divisions, 1]
+        tex_coords[size] = [1, 0] # pawn vertex
+        tex_coords[size+1] = [1, 1] # pawn vertex
         return tex_coords
 
     def generate_trunk_indices(self):
@@ -101,24 +102,24 @@ class GenerateTrunks(Textured):
         # top face
         for i in range(1, self.divisions):
             index[i-1]= [0, i + 1, i]
-        index[self.divisions-1] = [0, 1, self.divisions]
+        index[self.divisions-1] = [0, 2*self.divisions+2, self.divisions] #junction with the pawn vertex
         # bottom face
         for i in range(1, self.divisions):
             index[i-1+self.divisions] = [self.divisions + 1, self.divisions + i + 1, self.divisions + i + 2]
-        index[(self.divisions-1)+self.divisions] = [self.divisions + 1, self.divisions * 2 + 1, self.divisions + 2]
+        index[(self.divisions-1)+self.divisions] = [self.divisions + 1, self.divisions * 2 + 1, 2*self.divisions + 3] #same
         # side
         j=0
         for i in range(1, self.divisions):
             index[j+2*self.divisions] = [i, i + 1, self.divisions + i + 1]
             index[j+1+2*self.divisions] = [i + 1, self.divisions + i + 2, self.divisions + i + 1]
             j = j + 2
-        index[size-2] = [self.divisions, 1, self.divisions * 2 + 1]
-        index[size-1] = [1, self.divisions + 2, self.divisions * 2 + 1]
+        index[size-2] = [self.divisions, 2*self.divisions+2, self.divisions * 2 + 1] #junction with the pawn vertex
+        index[size-1] = [1, 2*self.divisions + 3, self.divisions * 2 + 1] #junction with the pawn vertex
 
         return index.flatten()
 
     def generate_trunk_vertices(self, size):    
-        vertices = np.empty(shape=(size,3))
+        vertices = np.empty(shape=(size+2,3))
         vertices[0] = [0, self.height, 0]
         # top
         i=1
@@ -131,6 +132,8 @@ class GenerateTrunks(Textured):
         for angle in np.arange(0, 2 * np.pi, 2 * np.pi / self.divisions):
             vertices[i] = [self.ray * np.cos(angle), 0, self.ray * np.sin(angle)]
             i = i + 1
+        vertices[size] = [self.ray, self.height, 0] # pawn vertex
+        vertices[size+1] = [self.ray, 0, 0] # pawn vertex
         return  vertices 
     
 
