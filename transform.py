@@ -30,7 +30,13 @@ def lerp(point_a, point_b, fraction):
     """ linear interpolation between two quantities with linear operators """
     return point_a + fraction * (point_b - point_a)
 
-
+def catmull_rom_spline(p0, p1, p2, p3, t): # that is a test to make things smoother
+    return 0.5 * (
+        (-t**3 + 2*t**2 - t) * p0
+        + (3*t**3 - 5*t**2 + 2) * p1
+        + (-3*t**3 + 4*t**2 + t) * p2
+        + (t**3 - t**2) * p3
+    )
 # Typical 4x4 matrix utilities for OpenGL ------------------------------------
 def identity():
     """ 4x4 identity matrix """

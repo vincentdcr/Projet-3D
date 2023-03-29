@@ -3,8 +3,8 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Node
 from texture import TexturedPyramid, TexturedSphere, TexturedCylinder, Texture, TexturedTiltedCylinder, Cone
 from transform import normalized
-from PIL import Image
-import glfw        
+
+      
 import random
 from math import radians
 
