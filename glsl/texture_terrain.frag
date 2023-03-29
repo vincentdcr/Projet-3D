@@ -26,7 +26,7 @@ uniform vec3 w_camera_position, light_dir;
 uniform vec3 fog_color;
 
 const float OFFSET_STRENGTH = 0.5;
-const vec3 BLEND_SHARPNESS = vec3(16.0,16.0,16.0);
+const vec3 BLEND_SHARPNESS = vec3(8.0,8.0,8.0);
 const float TILE_SCALE = 2.0;
 
 
@@ -109,7 +109,7 @@ void main() { //with GPU Gem 3 UDN blend implementation
     vec3 normal = normalize( normalX.xyz * blend_weights.x + normalY.xyz * blend_weights.y + 
                              normalZ.xyz * blend_weights.z + w_normal
                             );
-    vec3 color_y = textureNoTile(diffuse_map2, y_UV).rgb;
+    vec3 color_y = texture(diffuse_map2, y_UV).rgb;
     vec3 color_x = textureNoTile (diffuse_map, x_UV).rgb;
     vec3 color_z = textureNoTile(diffuse_map, z_UV).rgb;
 

@@ -30,6 +30,20 @@ def lerp(point_a, point_b, fraction):
     """ linear interpolation between two quantities with linear operators """
     return point_a + fraction * (point_b - point_a)
 
+def calc_normals(vertices, index):
+    normals = np.zeros(vertices.shape, dtype=vertices.dtype)
+    a = vertices[index[::3]]  # all 1st pts of triangles
+    b = vertices[index[1::3]] # all 2nd pts
+    c = vertices[index[2::3]]
+    ab = b - a
+    ac = c - a
+    normal = np.cross(ab, ac)
+    normal = np.apply_along_axis(normalized, axis=1, arr=normal)
+    np.add.at(normals, index[::3], normal)  # we add to normals elements from the index array the values of normal
+    np.add.at(normals, index[1::3], normal)
+    np.add.at(normals, index[2::3], normal)
+    return np.apply_along_axis(normalized, axis=1, arr=normals)
+
 
 # Typical 4x4 matrix utilities for OpenGL ------------------------------------
 def identity():

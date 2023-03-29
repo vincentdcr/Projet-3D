@@ -3,7 +3,7 @@ import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import  Mesh
 from texture import Texture, Textured
-from transform import normalized
+from transform import normalized, calc_normals
 from PIL import Image, ImageOps
 from shadowFrameBuffer import ShadowFrameBuffer
 
@@ -17,7 +17,7 @@ class Terrain(Textured):
         self.vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
-        normals = generate_normals(map_width, map_height, self.vertices) 
+        normals = calc_normals(self.vertices, indices) 
         #tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
         mesh = Mesh(shader, attributes=dict(position=self.vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)

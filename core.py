@@ -519,6 +519,7 @@ class Viewer(Node):
 
             # Poll for and process events
             glfw.poll_events()
+            print(self.camera.position)
 
     def on_key(self, _win, key, _scancode, action, _mods):
         """ 'Q' or 'Escape' quits """

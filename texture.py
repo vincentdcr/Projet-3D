@@ -3,26 +3,7 @@ from PIL import Image               # load texture maps
 import os
 import core
 import numpy as np
-
-def calcNormals(vertices, index):
-    normals = np.zeros(vertices.shape, dtype=vertices.dtype)
-
-    for i in range(0, len(index), 3):
-        a = vertices[index[i]]
-        b = vertices[index[i + 1]]
-        c = vertices[index[i + 2]]
-
-        normal = np.cross(b - a, c - a)
-        normal = normal / np.linalg.norm(normal)
-
-        normals[index[i]] += normal
-        normals[index[i + 1]] += normal
-        normals[index[i + 2]] += normal
-
-    for i in range(len(normals)):
-        normals[i] = normals[i] / np.linalg.norm(normals[i])
-
-    return normals, vertices, index
+from transform import calc_normals
 
 # -------------- OpenGL Texture Wrapper ---------------------------------------
 class Texture:
@@ -189,7 +170,7 @@ class TexturedCylinder(Textured):
             index = index + (i, i + 1, self.divisions + i + 1, i + 1, self.divisions + i + 2, self.divisions + i + 1)
         index = index + (self.divisions, 1, self.divisions * 2 + 1, 1, self.divisions + 2, self.divisions * 2 + 1)
 
-        (normals, vertices, index) = calcNormals(vertices, index)
+        normals = calc_normals(vertices, index)
         mesh = core.Mesh(shader, attributes=dict(position=vertices, tex_coord=np.array(tex_coord), normal=normals),
                     index=index, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
@@ -239,7 +220,7 @@ class TexturedTiltedCylinder(Textured):
             index = index + (i, i + 1, self.divisions + i + 1, i + 1, self.divisions + i + 2, self.divisions + i + 1)
         index = index + (self.divisions, 1, self.divisions * 2 + 1, 1, self.divisions + 2, self.divisions * 2 + 1)
 
-        (normals, vertices, index) = calcNormals(vertices, index)
+        normals = calc_normals(vertices, index)
         mesh = core.Mesh(shader, attributes=dict(position=vertices, tex_coord=np.array(tex_coord), normal=normals),
                     index=index, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
@@ -278,7 +259,47 @@ class Cone(Textured):
         for i in range(2, self.divisions, 1):
             index = index + (1, i , i + 1)
         index = index + (1, self.divisions, 2)
-        (normals, vertices, index) = calcNormals(vertices, index)
+        normals = calc_normals(vertices, index)
+        mesh = core.Mesh(shader, attributes=dict(position=vertices, tex_coord=np.array(tex_coord), normal=normals),
+                    index=index, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
+
+        # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
+        super().__init__(mesh, diffuse_map=texture, shadow_map=shadow_map_t)
+
+class PineCone(Textured):
+    """ Simple first textured object """
+
+    def __init__(self, shader, texture, t_height=1, l_height=2.0, divisions=8, r=0.5, position=(0, 0, 0), shadow_map_t=None, nb_cones=4):
+        self.divisions = divisions
+        # setup plane mesh to be textured
+        vertices = [] 
+        tex_coord = ()
+        index = ()
+        for i in range(nb_cones):
+            ray = -(1/nb_cones)*i + r
+            height = t_height*(3/2) + l_height * (i)     
+            vertices_tmp = ((0, l_height, 0),)
+            tex_coord += ((0, 0),)
+            tex_i = 0
+            vertices_tmp += ((0, 0, 0),)
+            tex_coord += ((1, 1),)
+            #bottom 
+            for angle in np.arange(0, 2 * np.pi, 2 * np.pi / self.divisions):
+                vertices_tmp += ((ray * np.cos(angle), 0, ray * np.sin(angle)),)
+                tex_coord += ((tex_i / divisions, 1),)
+                tex_i += 1
+            # sides face
+            j = i*(self.divisions+2)
+            for k in range(2, self.divisions+1, 1):
+                index = index + (j, k + 1 + j, k + j)
+            index = index + (j, 2 + j, self.divisions + j)
+            for k in range(2, self.divisions+1, 1):
+                index = index + (1 + j, k + j , k + 1 + j)
+            index = index + (1 + j, self.divisions + j, 2 + j)
+            vertices_tmp = np.array(vertices_tmp, np.float32) + np.array([position[0], position[1]+(height/2), position[2]], np.float32)
+            vertices.append(vertices_tmp)
+        vertices = np.concatenate(vertices, axis=0)
+        normals = calc_normals(vertices, index)
         mesh = core.Mesh(shader, attributes=dict(position=vertices, tex_coord=np.array(tex_coord), normal=normals),
                     index=index, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
@@ -319,9 +340,9 @@ class TexturedPyramid(Textured):
             3, 0, 4
         ], dtype=np.uint32)
 
-        (normals, vertices, index) = calcNormals(vertices, indices)
+        normals = calc_normals(vertices, indices)
         mesh = core.Mesh(shader, attributes=dict(position=vertices, tex_coord=np.array(texture_coords), normal=normals),
-                    index=index, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
+                    index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         super().__init__(mesh, diffuse_map=texture, shadow_map=shadow_map_t)
 
@@ -370,7 +391,7 @@ class TexturedSphere(Textured):
                 k1 = k1 + 1
                 k2 = k2 + 1
         
-        (normals, vertices, index) = calcNormals(vertices, index)
+        normals = calc_normals(vertices, index)
         self.vertices = vertices
         mesh = core.Mesh(shader, attributes=dict(position=vertices, tex_coord=np.array(tex_coord), normal=normals),
                     index=index, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
