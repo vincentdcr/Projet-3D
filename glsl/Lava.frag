@@ -3,7 +3,6 @@ out vec4 out_color;
 
 uniform sampler2D reflection_tex;
 uniform sampler2D refraction_tex;
-uniform sampler2D depth_map;
 uniform sampler2D dudv_map;
 uniform sampler2D normal_map;
 uniform sampler2D noise_map;

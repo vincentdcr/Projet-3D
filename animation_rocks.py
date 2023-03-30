@@ -36,7 +36,7 @@ class RockTime(Node):
             
             LavaShader = Shader("glsl/Lava.vert", "glsl/Lava.frag")
             Lava_node = Node(transform=translate(-14,0,-21))
-            Lava_node.add(Lava(LavaShader, 90, 80, "terrain_texture/noise_map.png", "dudv.png", "waternormalmap.png"))
+            Lava_node.add(Lava(LavaShader, 90, 80, "terrain_texture/noisemap.png", "dudv.png", "waternormalmap.png"))
             self.add(Lava_node)
 
             # make a small plane, put it at the origin and texture it with terrain_texture/lava-texture-free.jpg
