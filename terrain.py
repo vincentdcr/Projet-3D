@@ -11,8 +11,7 @@ from shadowFrameBuffer import ShadowFrameBuffer
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, tex_file, normal_file, tex_file2, normal_file2, noise_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
-        self.file = tex_file
+    def __init__(self, shader, terrain_textures, noise_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
         height_map = generate_height_map(map_width, map_height, heightmap_file)
         self.vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
@@ -23,12 +22,14 @@ class Terrain(Textured):
         mesh = Mesh(shader, attributes=dict(position=self.vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
-        texture = Texture(tex_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex = Texture(normal_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
-        texture2 = Texture(tex_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex2 = Texture(normal_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        texture = []
+        for i in range(0,len(terrain_textures),2):
+            texture.append( Texture(terrain_textures[i], GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR)))
+            texture.append(Texture(terrain_textures[i+1], GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False))
         noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
-        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
+        super().__init__(mesh, rock=texture[0], rock_normal=texture[1], meadow=texture[2], meadow_normal=texture[3], 
+                         ocean=texture[4], ocean_normal=texture[5], sand=texture[6], sand_normal=texture[7], 
+                         rock_snow=texture[8], rock_snow_normal=texture[9], noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
 
     def getVertices (self):
         return self.vertices 
@@ -125,4 +126,3 @@ def generate_tangents(vertices, indices, texcoords):
         tangents[i3] = tangents[i1]
         j = j + 1
     return tangents
-

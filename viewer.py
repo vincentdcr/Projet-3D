@@ -78,7 +78,12 @@ def main():
     reflectionShader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag") # reflection par rapport a la skybox
     #GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
     
-    
+    terrain_textures = ("terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
+                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", 
+                       "terrain_texture/ocean.png", "terrain_texture/ocean_normal.png", 
+                       "terrain_texture/sand.png", "terrain_texture/sand_normal.png",
+                       "terrain_texture/rock_snow.png", "terrain_texture/rock_snow_normal.png" )
+
     
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
@@ -92,8 +97,7 @@ def main():
     
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    terrain = Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
-                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png",
+    terrain = Terrain(shaderTerrain, terrain_textures, "terrain_texture/noise_map.png",
                        513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
 
     viewer.add(terrain)

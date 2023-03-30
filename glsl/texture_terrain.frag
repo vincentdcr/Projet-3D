@@ -1,9 +1,15 @@
 #version 330 core
 
-uniform sampler2D diffuse_map;
-uniform sampler2D normal_map;
-uniform sampler2D diffuse_map2;
-uniform sampler2D normal_map2;
+uniform sampler2D rock;
+uniform sampler2D rock_normal;
+uniform sampler2D meadow;
+uniform sampler2D meadow_normal;
+uniform sampler2D ocean;
+uniform sampler2D ocean_normal;
+uniform sampler2D sand;
+uniform sampler2D sand_normal;
+uniform sampler2D rock_snow;
+uniform sampler2D rock_snow_normal;
 uniform sampler2D noise_map;
 uniform sampler2DShadow shadow_map;
 in vec2 frag_tex_coords;
@@ -25,9 +31,9 @@ uniform vec3 w_camera_position, light_dir;
 //Fog specified color
 uniform vec3 fog_color;
 
-const float OFFSET_STRENGTH = 0.5;
+const float OFFSET_STRENGTH = 0.8;
 const vec3 BLEND_SHARPNESS = vec3(8.0,8.0,8.0);
-const float TILE_SCALE = 2.0;
+const float TILE_SCALE = 1.0;
 
 
 float computeFog(float d)
@@ -56,11 +62,15 @@ float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lig
 
 float sum( vec3 v ) { return v.x+v.y+v.z; }
 
+float noise_map_lookup(vec2 x, float factor) {
+    return texture( noise_map, factor*x ).x;
+}
+
 // Pulled from https://www.shadertoy.com/view/Xtl3zf
 // Add variety to terrain
 vec3 textureNoTile(sampler2D map, vec2 x)
 {
-    float k = texture( noise_map, 0.005*x ).x; // cheap (cache friendly) lookup
+    float k = noise_map_lookup(x, 0.005); // cheap (cache friendly) lookup
     
     vec2 duvdx = dFdx( x );
     vec2 duvdy = dFdy( x );
@@ -83,7 +93,13 @@ vec3 textureNoTile(sampler2D map, vec2 x)
     return mix( cola, colb, smoothstep(0.2,0.8,f-0.1*sum(cola-colb)) );
 }
 
-
+// returns a value between 0 and 1 for blending purposes (lower ABS bound between the two)
+float compute_gradient(float lower_bound, float upper_bound, vec2 x, float factor, bool is_dissolve) {
+    float base = min(lower_bound, upper_bound);
+    float span = abs(upper_bound - lower_bound);
+    float lookup_value = is_dissolve ?  noise_map_lookup( x, factor) : -noise_map_lookup(x, factor); 
+    return clamp((w_position.y-base)/span - lookup_value, 0.0, 1.0) ;
+}
 
 void main() { //with GPU Gem 3 UDN blend implementation 
     // compute blendWeights according to the world normal of the fragment
@@ -96,9 +112,69 @@ void main() { //with GPU Gem 3 UDN blend implementation
     vec2 x_UV = w_position.zy / TILE_SCALE;
     vec2 z_UV = w_position.xy / TILE_SCALE;
     // texture from the sampled UVs
-    vec3 tangent_normal_y = textureNoTile(normal_map2, y_UV).rgb;
-    vec3 tangent_normal_x = textureNoTile (normal_map, x_UV).rgb;
-    vec3 tangent_normal_z = textureNoTile(normal_map, z_UV).rgb;
+    vec3 tangent_normal_x, tangent_normal_y, tangent_normal_z, color_x, color_y, color_z;
+
+    vec3 tangent_normal_rock_x = textureNoTile (rock_normal, x_UV).rgb;
+    vec3 tangent_normal_rock_z = textureNoTile(rock_normal, z_UV).rgb;
+    vec3 color_rock_x = textureNoTile (rock, x_UV).rgb;
+    vec3 color_rock_z = textureNoTile(rock, z_UV).rgb;
+    vec3 tangent_normal_sand_x = textureNoTile(sand_normal, x_UV).rgb;
+    vec3 tangent_normal_sand_z = textureNoTile(sand_normal, z_UV).rgb;
+    vec3 color_sand_x = textureNoTile(sand, x_UV).rgb;
+    vec3 color_sand_z = textureNoTile(sand, z_UV).rgb;
+    vec3 tangent_normal_rock_snow_x = textureNoTile(rock_snow_normal, x_UV).rgb;
+    vec3 tangent_normal_rock_snow_z = textureNoTile(rock_snow_normal, z_UV).rgb;
+    vec3 color_rock_snow_x = textureNoTile(rock_snow, x_UV).rgb;
+    vec3 color_rock_snow_z = textureNoTile(rock_snow, z_UV).rgb;
+    if ( w_position.y <= -45) {
+        color_x = color_sand_x;
+        color_z = color_sand_z;
+        tangent_normal_x = tangent_normal_sand_x;
+        tangent_normal_z = tangent_normal_sand_z;
+        tangent_normal_y = textureNoTile(ocean_normal, y_UV).rgb;
+        color_y = textureNoTile(ocean, y_UV).rgb;    
+    } if (w_position.y > -45 && w_position.y <= -35) {
+        color_x = mix(color_sand_x, color_rock_x, compute_gradient(-40, -35, x_UV, 0.5, false));
+        color_z = mix(color_sand_z, color_rock_z, compute_gradient(-40, -35, z_UV, 0.5, false));
+        tangent_normal_x = mix(tangent_normal_sand_x, tangent_normal_rock_x, compute_gradient(-40, -35, x_UV, 0.5, false));
+        tangent_normal_z = mix(tangent_normal_sand_z, tangent_normal_rock_z, compute_gradient(-40, -35, z_UV, 0.5, false));
+    } if (w_position.y > -35 && w_position.y <= 20) {
+        color_x = color_rock_x;
+        color_z = color_rock_z;
+        tangent_normal_x = tangent_normal_rock_x;
+        tangent_normal_z = tangent_normal_rock_z;
+    } if (w_position.y > 20) {
+        color_x = mix(color_rock_x, color_rock_snow_x, compute_gradient(20, 64, x_UV, 0.1, true));
+        color_z = mix(color_rock_z, color_rock_snow_z, compute_gradient(20, 64, z_UV, 0.1, true));
+        tangent_normal_x = mix(tangent_normal_rock_x, tangent_normal_rock_snow_x, compute_gradient(20, 64, x_UV, 0.1, true));
+        tangent_normal_z = mix(tangent_normal_rock_z, tangent_normal_rock_snow_z, compute_gradient(20, 64, z_UV, 0.1, true));
+    }
+
+
+    vec3 tangent_normal_sand_y = textureNoTile(sand_normal, y_UV).rgb;
+    vec3 color_sand_y = textureNoTile(sand, y_UV).rgb;
+    vec3 tangent_normal_meadow_y = textureNoTile(meadow_normal, y_UV).rgb;
+    vec3 color_meadow_y = textureNoTile(meadow, y_UV).rgb;
+    vec3 tangent_normal_rock_snow_y = textureNoTile(rock_snow_normal, y_UV).rgb;
+    vec3 color_rock_snow_y = textureNoTile(rock_snow, y_UV).rgb;
+
+    if (w_position.y > -45 && w_position.y <= -40) {
+        tangent_normal_y = tangent_normal_sand_y;
+        color_y = color_sand_y;
+    } if (w_position.y > -40 && w_position.y <= -30) {
+        color_y = mix(color_sand_y, color_meadow_y, compute_gradient(-35, -30, y_UV, 0.5, false));
+        tangent_normal_y = mix(tangent_normal_sand_y, tangent_normal_meadow_y, compute_gradient(-35, -30, y_UV, 0.5, false));
+    } if (w_position.y > -30 && w_position.y <= 15) {
+        tangent_normal_y = tangent_normal_meadow_y;
+        color_y = color_meadow_y;
+    } if (w_position.y > 15 && w_position.y <= 25) {
+        color_y = mix(color_meadow_y, color_rock_snow_y, compute_gradient(20, 25, y_UV, 0.5, false));
+        tangent_normal_y = mix(tangent_normal_meadow_y, color_rock_snow_y, compute_gradient(20, 25, y_UV, 0.5, false));
+    } if (w_position.y > 25) {
+        tangent_normal_y = tangent_normal_rock_snow_y;
+        color_y = color_rock_snow_y;
+    }
+
 
     // swizzle tangent normal map to match world normals
     vec3 normalX = vec3(0.0, tangent_normal_x.yx);
@@ -109,9 +185,9 @@ void main() { //with GPU Gem 3 UDN blend implementation
     vec3 normal = normalize( normalX.xyz * blend_weights.x + normalY.xyz * blend_weights.y + 
                              normalZ.xyz * blend_weights.z + w_normal
                             );
-    vec3 color_y = texture(diffuse_map2, y_UV).rgb;
-    vec3 color_x = textureNoTile (diffuse_map, x_UV).rgb;
-    vec3 color_z = textureNoTile(diffuse_map, z_UV).rgb;
+
+
+
 
     vec3 texture = color_x * blend_weights.x + color_y * blend_weights.y + color_z * blend_weights.z;
    

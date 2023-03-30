@@ -526,7 +526,6 @@ class Viewer(Node):
         """ 'Q' or 'Escape' quits """
         if action == glfw.PRESS or action == glfw.REPEAT:
             self.key_handler(key)
-            print("POSITION ACTUELLE CAMERA : ", self.camera.position)
             if key == glfw.KEY_ESCAPE or key == glfw.KEY_Q:
                 glfw.set_window_should_close(self.win, True)
             if key == glfw.KEY_Z:
