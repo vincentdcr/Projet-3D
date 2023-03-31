@@ -107,6 +107,7 @@ class Shader:
         GL.GL_FLOAT_MAT3: GL.glUniformMatrix3fv,
         GL.GL_FLOAT_MAT4: GL.glUniformMatrix4fv,
         GL.GL_SAMPLER_2D_SHADOW: GL.glUniform1iv,
+        GL.GL_SAMPLER_2D_ARRAY: GL.glUniform1iv,
     }
 
 
@@ -304,7 +305,6 @@ def load(file, shader, tex_file=None, **params):
             position=mesh.mVertices,
             normal=mesh.mNormals,
         )
-        print(mat)
         # ---- optionally add texture coordinates attribute if present
         if mesh.HasTextureCoords[0]:
             attributes.update(tex_coord=mesh.mTextureCoords[0])
@@ -486,8 +486,9 @@ class Viewer(Node):
                       shadow_distance=self.shadow_map_manager.getShadowDistance())
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
-
-            GL.glEnable(GL.GL_FRAMEBUFFER_SRGB) # for gamma correction
+            GL.glEnable(GL.GL_FRAMEBUFFER_SRGB)
+            tps = min(timer() / 30 , 1.0)
+            print (tps)
             self.draw(view=self.camera.view_matrix(),
                       projection=self.camera.projection_matrix(win_size),
                       model=identity(),
@@ -496,12 +497,12 @@ class Viewer(Node):
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
                       displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
+                      lava_speed = tps,
                       near = self.camera.near_clip,
                       far = self.camera.far_clip,           
                       light_space_matrix = light_projection @ light_view,
                       shadow_distance=self.shadow_map_manager.getShadowDistance())
             GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
-
             #Draw the FBOS texture in a quad in the corner of the screen
             Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
             # flush render commands, and swap draw buffers

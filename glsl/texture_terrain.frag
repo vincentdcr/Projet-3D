@@ -1,16 +1,11 @@
 #version 330 core
 
-uniform sampler2D rock;
-uniform sampler2D rock_normal;
-uniform sampler2D meadow;
-uniform sampler2D meadow_normal;
-uniform sampler2D ocean;
-uniform sampler2D ocean_normal;
-uniform sampler2D sand;
-uniform sampler2D sand_normal;
-uniform sampler2D rock_snow;
-uniform sampler2D rock_snow_normal;
+uniform sampler2D lava_map;
+uniform sampler2DArray terrain;
+uniform sampler2DArray terrain_normal;
 uniform sampler2D noise_map;
+uniform sampler2D dudv_map;
+uniform sampler2D lava_normal_map;
 uniform sampler2DShadow shadow_map;
 in vec2 frag_tex_coords;
 in vec4 frag_tex_light_space_coords; 
@@ -25,16 +20,18 @@ uniform float s;
 in vec3 w_position, w_normal;
 in float out_of_shadow_area_factor;
 
-
 uniform vec3 w_camera_position, light_dir;
 
 //Fog specified color
 uniform vec3 fog_color;
 
+uniform float lava_speed;
+uniform float displacement_speed;
+
 const float OFFSET_STRENGTH = 0.8;
 const vec3 BLEND_SHARPNESS = vec3(8.0,8.0,8.0);
 const float TILE_SCALE = 1.0;
-
+const float DISTORSION_STRENGTH = 0.55;
 
 float computeFog(float d)
 {
@@ -68,7 +65,7 @@ float noise_map_lookup(vec2 x, float factor) {
 
 // Pulled from https://www.shadertoy.com/view/Xtl3zf
 // Add variety to terrain
-vec3 textureNoTile(sampler2D map, vec2 x)
+vec3 textureNoTile(sampler2DArray map, vec2 x, float tex_index)
 {
     float k = noise_map_lookup(x, 0.005); // cheap (cache friendly) lookup
     
@@ -87,8 +84,8 @@ vec3 textureNoTile(sampler2D map, vec2 x)
     vec2 offa = sin(vec2(1.0,3.0)*ia); // can replace with any other hash
     vec2 offb = sin(vec2(1.0,3.0)*ib); // can replace with any other hash
 
-    vec3 cola = textureGrad( map, x + OFFSET_STRENGTH*offa, duvdx, duvdy ).xyz;
-    vec3 colb = textureGrad( map, x + OFFSET_STRENGTH*offb, duvdx, duvdy ).xyz;
+    vec3 cola = textureGrad( map, vec3(x + OFFSET_STRENGTH*offa,tex_index), duvdx, duvdy ).xyz;
+    vec3 colb = textureGrad( map, vec3(x + OFFSET_STRENGTH*offb,tex_index), duvdx, duvdy ).xyz;
     
     return mix( cola, colb, smoothstep(0.2,0.8,f-0.1*sum(cola-colb)) );
 }
@@ -99,6 +96,35 @@ float compute_gradient(float lower_bound, float upper_bound, vec2 x, float facto
     float span = abs(upper_bound - lower_bound);
     float lookup_value = is_dissolve ?  noise_map_lookup( x, factor) : -noise_map_lookup(x, factor); 
     return clamp((w_position.y-base)/span - lookup_value, 0.0, 1.0) ;
+}
+
+vec3 lava_apparition(vec3 tex) {
+    vec4 lava = texture(lava_map, w_position.xz/513+256.5); 
+
+    if (lava.x == 0.0){
+        return tex;
+    } 
+    else {
+        float bilin_val = clamp((lava_speed*(-lava.x)+lava.x+lava_speed)-0.1*(1/lava_speed),0.0,1.0);
+
+
+        //compute the dudv map distorsion value for the rippling effect
+        vec2 dudv_distortion_coords = texture(dudv_map, vec2(frag_tex_coords.x, frag_tex_coords.y + 5.0* displacement_speed)).rg * 0.5 ;
+        dudv_distortion_coords = frag_tex_coords + vec2(dudv_distortion_coords.x + 1.0*displacement_speed, dudv_distortion_coords.y + 5.0*displacement_speed);
+        vec2 dudv_distortion = (texture(dudv_map, dudv_distortion_coords).rg * 2.0 - 1.0) * DISTORSION_STRENGTH;
+
+
+        //normal calculation from normal map
+        vec4 normal_map_color = texture(lava_normal_map, dudv_distortion_coords);
+        // we extract the normal of the distorted fragment by taking the value pointing up and clamping the others to (-1;1)
+        vec3 normal = vec3(normal_map_color.r *2.0 - 1.0 , normal_map_color.b * 2.5, normal_map_color.g * 2.0 - 1.0);
+        normal = normalize(normal);
+
+        vec3 color_offset = texture(noise_map, dudv_distortion_coords*0.08).rgb ;
+   
+        vec3 final_color = vec3(0.8,0.01,0.0)+ vec3(0.2,0.2,0.0)*color_offset.x;
+        return mix(tex, final_color, bilin_val);
+    }
 }
 
 void main() { //with GPU Gem 3 UDN blend implementation 
@@ -114,25 +140,25 @@ void main() { //with GPU Gem 3 UDN blend implementation
     // texture from the sampled UVs
     vec3 tangent_normal_x, tangent_normal_y, tangent_normal_z, color_x, color_y, color_z;
 
-    vec3 tangent_normal_rock_x = textureNoTile (rock_normal, x_UV).rgb;
-    vec3 tangent_normal_rock_z = textureNoTile(rock_normal, z_UV).rgb;
-    vec3 color_rock_x = textureNoTile (rock, x_UV).rgb;
-    vec3 color_rock_z = textureNoTile(rock, z_UV).rgb;
-    vec3 tangent_normal_sand_x = textureNoTile(sand_normal, x_UV).rgb;
-    vec3 tangent_normal_sand_z = textureNoTile(sand_normal, z_UV).rgb;
-    vec3 color_sand_x = textureNoTile(sand, x_UV).rgb;
-    vec3 color_sand_z = textureNoTile(sand, z_UV).rgb;
-    vec3 tangent_normal_rock_snow_x = textureNoTile(rock_snow_normal, x_UV).rgb;
-    vec3 tangent_normal_rock_snow_z = textureNoTile(rock_snow_normal, z_UV).rgb;
-    vec3 color_rock_snow_x = textureNoTile(rock_snow, x_UV).rgb;
-    vec3 color_rock_snow_z = textureNoTile(rock_snow, z_UV).rgb;
+    vec3 tangent_normal_rock_x = textureNoTile (terrain_normal, x_UV, 0.0).rgb;
+    vec3 tangent_normal_rock_z = textureNoTile(terrain_normal, z_UV, 0.0).rgb;
+    vec3 color_rock_x = textureNoTile (terrain, x_UV,0.0).rgb;
+    vec3 color_rock_z = textureNoTile(terrain, z_UV,0.0).rgb;
+    vec3 tangent_normal_sand_x = textureNoTile(terrain_normal, x_UV,3.0).rgb;
+    vec3 tangent_normal_sand_z = textureNoTile(terrain_normal, z_UV,3.0).rgb;
+    vec3 color_sand_x = textureNoTile(terrain, x_UV,3.0).rgb;
+    vec3 color_sand_z = textureNoTile(terrain, z_UV,3.0).rgb;
+    vec3 tangent_normal_rock_snow_x = textureNoTile(terrain_normal, x_UV,4.0).rgb;
+    vec3 tangent_normal_rock_snow_z = textureNoTile(terrain_normal, z_UV,4.0).rgb;
+    vec3 color_rock_snow_x = textureNoTile(terrain, x_UV,4.0).rgb;
+    vec3 color_rock_snow_z = textureNoTile(terrain, z_UV,4.0).rgb;
     if ( w_position.y <= -45) {
         color_x = color_sand_x;
         color_z = color_sand_z;
         tangent_normal_x = tangent_normal_sand_x;
         tangent_normal_z = tangent_normal_sand_z;
-        tangent_normal_y = textureNoTile(ocean_normal, y_UV).rgb;
-        color_y = textureNoTile(ocean, y_UV).rgb;    
+        tangent_normal_y = textureNoTile(terrain_normal, y_UV, 2.0).rgb;
+        color_y = textureNoTile(terrain, y_UV, 2.0).rgb;    
     } if (w_position.y > -45 && w_position.y <= -35) {
         color_x = mix(color_sand_x, color_rock_x, compute_gradient(-40, -35, x_UV, 0.5, false));
         color_z = mix(color_sand_z, color_rock_z, compute_gradient(-40, -35, z_UV, 0.5, false));
@@ -150,13 +176,12 @@ void main() { //with GPU Gem 3 UDN blend implementation
         tangent_normal_z = mix(tangent_normal_rock_z, tangent_normal_rock_snow_z, compute_gradient(20, 64, z_UV, 0.1, true));
     }
 
-
-    vec3 tangent_normal_sand_y = textureNoTile(sand_normal, y_UV).rgb;
-    vec3 color_sand_y = textureNoTile(sand, y_UV).rgb;
-    vec3 tangent_normal_meadow_y = textureNoTile(meadow_normal, y_UV).rgb;
-    vec3 color_meadow_y = textureNoTile(meadow, y_UV).rgb;
-    vec3 tangent_normal_rock_snow_y = textureNoTile(rock_snow_normal, y_UV).rgb;
-    vec3 color_rock_snow_y = textureNoTile(rock_snow, y_UV).rgb;
+    vec3 tangent_normal_sand_y = textureNoTile(terrain_normal, y_UV,3.0).rgb;
+    vec3 color_sand_y = textureNoTile(terrain, y_UV,3.0).rgb;
+    vec3 tangent_normal_meadow_y = textureNoTile(terrain_normal, y_UV,1.0).rgb;
+    vec3 color_meadow_y = textureNoTile(terrain, y_UV,1.0).rgb;
+    vec3 tangent_normal_rock_snow_y = textureNoTile(terrain_normal, y_UV,4.0).rgb;
+    vec3 color_rock_snow_y = textureNoTile(terrain, y_UV,4.0).rgb;
 
     if (w_position.y > -45 && w_position.y <= -40) {
         tangent_normal_y = tangent_normal_sand_y;
@@ -175,7 +200,6 @@ void main() { //with GPU Gem 3 UDN blend implementation
         color_y = color_rock_snow_y;
     }
 
-
     // swizzle tangent normal map to match world normals
     vec3 normalX = vec3(0.0, tangent_normal_x.yx);
     vec3 normalY = vec3(tangent_normal_y.x, 0.0, tangent_normal_y.y);
@@ -186,10 +210,8 @@ void main() { //with GPU Gem 3 UDN blend implementation
                              normalZ.xyz * blend_weights.z + w_normal
                             );
 
-
-
-
-    vec3 texture = color_x * blend_weights.x + color_y * blend_weights.y + color_z * blend_weights.z;
+    vec3 final_texture = color_x * blend_weights.x + color_y * blend_weights.y + color_z * blend_weights.z;
+    final_texture = lava_apparition(final_texture);
    
     //Phong illumination using normal from normal map
     vec3 lightDir = normalize(light_dir - w_position);
@@ -199,9 +221,10 @@ void main() { //with GPU Gem 3 UDN blend implementation
     vec3 diffuse = k_d*max(dot(normal, lightDir ),0) * shadow;
     vec3 specular = k_s*pow(max(dot(r, view_vector),0), s) * shadow;
     vec3 I = k_a + diffuse + specular;
-    vec3 light_texture = I * texture;
+    vec3 light_texture = I * final_texture;
 
     // add the fog to the final fragment color
     out_color = mix(vec4(fog_color,1), vec4(light_texture,1), computeFog(distance(w_camera_position, w_position)));
 }
+
 

@@ -2,7 +2,7 @@
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import  Mesh
-from texture import Texture, Textured
+from texture import Texture, Textured, TextureArray
 from transform import normalized, calc_normals
 from PIL import Image, ImageOps
 from shadowFrameBuffer import ShadowFrameBuffer
@@ -11,7 +11,7 @@ from shadowFrameBuffer import ShadowFrameBuffer
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, terrain_textures, noise_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
+    def __init__(self, shader, terrain_textures, terrain_normal_textures, noise_file, lava_map_file, dudv_file, lava_normal_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
         height_map = generate_height_map(map_width, map_height, heightmap_file)
         self.vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
@@ -23,13 +23,15 @@ class Terrain(Textured):
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
         texture = []
-        for i in range(0,len(terrain_textures),2):
-            texture.append( Texture(terrain_textures[i], GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR)))
-            texture.append(Texture(terrain_textures[i+1], GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False))
+
+        terrain_tex = TextureArray(terrain_textures, 2048, 2048, GL.GL_REPEAT, GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR)
+        terrain_normal_tex = TextureArray(terrain_normal_textures, 2048, 2048, GL.GL_REPEAT, GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR, gamma_correction=False)
         noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
-        super().__init__(mesh, rock=texture[0], rock_normal=texture[1], meadow=texture[2], meadow_normal=texture[3], 
-                         ocean=texture[4], ocean_normal=texture[5], sand=texture[6], sand_normal=texture[7], 
-                         rock_snow=texture[8], rock_snow_normal=texture[9], noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
+        lava_map_tex = Texture(lava_map_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        lava_normal_tex = Texture(lava_normal_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        dudv_tex = Texture(dudv_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        super().__init__(mesh, terrain=terrain_tex, terrain_normal=terrain_normal_tex, noise_map=noise_tex, lava_map=lava_map_tex, 
+                         lava_normal_map=lava_normal_tex, dudv_map=dudv_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
 
     def getVertices (self):
         return self.vertices 
