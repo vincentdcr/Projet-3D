@@ -333,9 +333,9 @@ class FlyoutCamera:
         elif direction == "right":
             self.position += acceleration_ratio * self.move_speed * self.right
         elif direction == "up":
-            self.position += acceleration_ratio * self.move_speed * self.up
+            self.position += acceleration_ratio * self.move_speed * vec(0.0,1.0,0.0)
         elif direction == "down":
-            self.position -= acceleration_ratio * self.move_speed * self.up
+            self.position -= acceleration_ratio * self.move_speed * vec(0.0,1.0,0.0)
 
 
     def stop_keyboard(self):

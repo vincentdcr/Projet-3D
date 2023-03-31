@@ -487,8 +487,6 @@ class Viewer(Node):
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             GL.glEnable(GL.GL_FRAMEBUFFER_SRGB)
-            tps = min(timer() / 30 , 1.0)
-            print (tps)
             self.draw(view=self.camera.view_matrix(),
                       projection=self.camera.projection_matrix(win_size),
                       model=identity(),
@@ -497,7 +495,7 @@ class Viewer(Node):
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
                       displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
-                      lava_speed = tps,
+                      lava_speed = min(timer() / 30 , 1.0),
                       near = self.camera.near_clip,
                       far = self.camera.far_clip,           
                       light_space_matrix = light_projection @ light_view,

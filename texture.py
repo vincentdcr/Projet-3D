@@ -55,7 +55,7 @@ class TextureArray:
             else : 
                 color_coding1 = GL.GL_RGBA8
                 color_coding2 = GL.GL_RGBA
-            GL.glTexStorage3D(GL.GL_TEXTURE_2D_ARRAY, 8, color_coding1, files_width, files_height, len(tex_files))
+            GL.glTexStorage3D(GL.GL_TEXTURE_2D_ARRAY, 10, color_coding1, files_width, files_height, len(tex_files))
             for i in range(len(tex_files)):
                     tex = Image.open(tex_files[i]).convert('RGBA')
                     GL.glTexSubImage3D(GL.GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, files_width, files_height, 1, color_coding2, GL.GL_UNSIGNED_BYTE, tex.tobytes())

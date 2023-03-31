@@ -41,7 +41,7 @@ float computeFog(float d)
 
 float shadow_calculation(vec4 frag_tex_light_space_coords, vec3 normal, vec3 lightDir)
 {
-    float bias = max(0.02 * (1.0 - dot(normal, lightDir)), 0.001);
+    float bias = max(0.015 * (1.0 - dot(normal, lightDir)), 0.001);
 
     // perspective divide 
     vec3 proj_coords = frag_tex_light_space_coords.xyz / frag_tex_light_space_coords.w;
