@@ -10,9 +10,12 @@ from terrain import Terrain
 from transform import translate, vec, quaternion
 from animation import KeyFrameControlNode
 from water import Water
-from arbre import Treemapping
+from tree import Treemapping
 from GrassManager import Grass_blade
 from animation_rocks import RockTime
+from cloud import Cloud
+from noise import Noise
+
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
     """ Simple first textured object """
@@ -77,8 +80,17 @@ def main():
     waterShader = Shader("glsl/water.vert", "glsl/water.frag")
     reflectionShader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag") # reflection par rapport a la skybox
     #GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
+    cloudShader = Shader("glsl/cloud.vert", "glsl/cloud.frag")
+    
+    noiseMap = Noise()
     
     
+    terrain_textures = ("terrain_texture/blackrock.png", "terrain_texture/meadow.png", 
+                       "terrain_texture/ocean.png", "terrain_texture/sand.png", "terrain_texture/rock_snow.png" )
+    terrain_normal_textures = ("terrain_texture/blackrock_normal.png", "terrain_texture/meadow_normal.png", 
+                       "terrain_texture/ocean_normal.png", "terrain_texture/sand_normal.png",
+                       "terrain_texture/rock_snow_normal.png" )
+
     
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
     #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
@@ -92,20 +104,20 @@ def main():
     
     #viewer.add(load("rock/Rock1/Rock1.obj", shader))
     #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    terrain = Terrain(shaderTerrain, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
-                       "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png",
-                       513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
+    terrain = Terrain(shaderTerrain, terrain_textures, terrain_normal_textures, "terrain_texture/noise_map.png", "terrain_texture/lava_map.png",
+                       "dudv.png", "waternormalmap.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
 
     viewer.add(terrain)
     #viewer.add(Terrain(normalvizShader, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
     #                   "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer()))
     vertices = terrain.getVertices()    
     
+    viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/bark.jpg", 500, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(RockTime(shader, reflectionShader))
     #viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/tronc.png", 30, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
-
+    viewer.add(Cloud(cloudShader, 513,513,noiseMap.getNoiseMapTexture()))
     # start rendering loop
     viewer.run()   
 

@@ -17,6 +17,9 @@ from quad import Quad
 import water
 from texture import Textured
 from shadow_map_manager import ShadowMapManager
+from noise import Noise
+import cloud
+
 #text functions
 from renderText import RenderText
 
@@ -107,6 +110,7 @@ class Shader:
         GL.GL_FLOAT_MAT3: GL.glUniformMatrix3fv,
         GL.GL_FLOAT_MAT4: GL.glUniformMatrix4fv,
         GL.GL_SAMPLER_2D_SHADOW: GL.glUniform1iv,
+        GL.GL_SAMPLER_2D_ARRAY: GL.glUniform1iv,
     }
 
 
@@ -191,13 +195,20 @@ class Node:
         """ Add drawables to this node, simply updating children list """
         self.children.extend(drawables)
 
-    def draw(self, model=identity(), draw_water_flag=True, **other_uniforms):
+    def draw(self, model=identity(), draw_water_flag=True, draw_cloud_flag=True, **other_uniforms):
         """ Recursive draw, passing down updated model matrix. """
         self.world_transform = model @ self.transform
         for child in self.children:
-            if (not isinstance(child, water.Water) or draw_water_flag):
-                child.draw(model=self.world_transform, **other_uniforms)
-            
+            if (not isinstance(child, water.Water) or draw_water_flag): 
+                if ( isinstance(child, cloud.Cloud)):
+                    if (not draw_cloud_flag):
+                        continue
+                    GL.glDisable(GL.GL_CULL_FACE)
+                    child.draw(model=self.world_transform, **other_uniforms)
+                    GL.glEnable(GL.GL_CULL_FACE)
+                else:
+                    child.draw(model=self.world_transform, **other_uniforms)
+
     def key_handler(self, key):
         """ Dispatch keyboard events to children with key handler """
         for child in (c for c in self.children if hasattr(c, 'key_handler')):
@@ -304,7 +315,6 @@ def load(file, shader, tex_file=None, **params):
             position=mesh.mVertices,
             normal=mesh.mNormals,
         )
-        print(mat)
         # ---- optionally add texture coordinates attribute if present
         if mesh.HasTextureCoords[0]:
             attributes.update(tex_coord=mesh.mTextureCoords[0])
@@ -451,6 +461,7 @@ class Viewer(Node):
                       projection=light_projection,
                       model=identity(),
                       draw_water_flag = False,
+                      draw_cloud_flag = False,
                       light_dir=self.main_light)
             GL.glDisable(GL.GL_DEPTH_CLAMP)
             self.shadowFrameBuffer.unbindCurrentFrameBuffer()
@@ -486,8 +497,7 @@ class Viewer(Node):
                       shadow_distance=self.shadow_map_manager.getShadowDistance())
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
-
-            GL.glEnable(GL.GL_FRAMEBUFFER_SRGB) # for gamma correction
+            GL.glEnable(GL.GL_FRAMEBUFFER_SRGB)
             self.draw(view=self.camera.view_matrix(),
                       projection=self.camera.projection_matrix(win_size),
                       model=identity(),
@@ -496,12 +506,12 @@ class Viewer(Node):
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
                       displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
+                      lava_speed = min(timer() / 30 , 1.0),
                       near = self.camera.near_clip,
                       far = self.camera.far_clip,           
                       light_space_matrix = light_projection @ light_view,
                       shadow_distance=self.shadow_map_manager.getShadowDistance())
             GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
-
             #Draw the FBOS texture in a quad in the corner of the screen
             Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
             # flush render commands, and swap draw buffers
@@ -526,7 +536,6 @@ class Viewer(Node):
         """ 'Q' or 'Escape' quits """
         if action == glfw.PRESS or action == glfw.REPEAT:
             self.key_handler(key)
-            print("POSITION ACTUELLE CAMERA : ", self.camera.position)
             if key == glfw.KEY_ESCAPE or key == glfw.KEY_Q:
                 glfw.set_window_should_close(self.win, True)
             if key == glfw.KEY_Z:

@@ -2,8 +2,8 @@
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import  Mesh
-from texture import Texture, Textured
-from transform import normalized
+from texture import Texture, Textured, TextureArray
+from transform import normalized, calc_normals
 from PIL import Image, ImageOps
 from shadowFrameBuffer import ShadowFrameBuffer
 
@@ -11,24 +11,27 @@ from shadowFrameBuffer import ShadowFrameBuffer
 # -------------- Terrain ---------------------------------
 class Terrain(Textured):
     """ Simple first textured object """
-    def __init__(self, shader, tex_file, normal_file, tex_file2, normal_file2, noise_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
-        self.file = tex_file
+    def __init__(self, shader, terrain_textures, terrain_normal_textures, noise_file, lava_map_file, dudv_file, lava_normal_file, map_width, map_height, heightmap_file, shadowFrameBuffer):
         height_map = generate_height_map(map_width, map_height, heightmap_file)
         self.vertices = generate_vertices(map_width, map_height, height_map)
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
-        normals = generate_normals(map_width, map_height, self.vertices) 
+        normals = calc_normals(self.vertices, indices) 
         #tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
         mesh = Mesh(shader, attributes=dict(position=self.vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
-        texture = Texture(tex_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex = Texture(normal_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
-        texture2 = Texture(tex_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR))
-        normal_tex2 = Texture(normal_file2, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        texture = []
+
+        terrain_tex = TextureArray(terrain_textures, 2048, 2048, GL.GL_REPEAT, GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR)
+        terrain_normal_tex = TextureArray(terrain_normal_textures, 2048, 2048, GL.GL_REPEAT, GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR, gamma_correction=False)
         noise_tex = Texture(noise_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
-        super().__init__(mesh, diffuse_map=texture, normal_map=normal_tex, diffuse_map2=texture2, normal_map2=normal_tex2, noise_map=noise_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
+        lava_map_tex = Texture(lava_map_file, GL.GL_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        lava_normal_tex = Texture(lava_normal_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        dudv_tex = Texture(dudv_file, GL.GL_MIRRORED_REPEAT, *(GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR), gamma_correction=False)
+        super().__init__(mesh, terrain=terrain_tex, terrain_normal=terrain_normal_tex, noise_map=noise_tex, lava_map=lava_map_tex, 
+                         lava_normal_map=lava_normal_tex, dudv_map=dudv_tex, shadow_map=shadowFrameBuffer.getDepthTexture())
 
     def getVertices (self):
         return self.vertices 
@@ -125,4 +128,3 @@ def generate_tangents(vertices, indices, texcoords):
         tangents[i3] = tangents[i1]
         j = j + 1
     return tangents
-

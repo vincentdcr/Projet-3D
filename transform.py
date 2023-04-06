@@ -30,6 +30,21 @@ def lerp(point_a, point_b, fraction):
     """ linear interpolation between two quantities with linear operators """
     return point_a + fraction * (point_b - point_a)
 
+def calc_normals(vertices, index):
+    normals = np.zeros(vertices.shape, dtype=vertices.dtype)
+    a = vertices[index[::3]]  # all 1st pts of triangles
+    b = vertices[index[1::3]] # all 2nd pts
+    c = vertices[index[2::3]]
+    ab = b - a
+    ac = c - a
+    normal = np.cross(ab, ac)
+    normal = np.apply_along_axis(normalized, axis=1, arr=normal)
+    np.add.at(normals, index[::3], normal)  # we add to normals elements from the index array the values of normal
+    np.add.at(normals, index[1::3], normal)
+    np.add.at(normals, index[2::3], normal)
+    return np.apply_along_axis(normalized, axis=1, arr=normals)
+
+
 def catmull_rom_spline(p0, p1, p2, p3, t): # that is a test to make things smoother
     return 0.5 * (
         (-t**3 + 2*t**2 - t) * p0
@@ -318,9 +333,9 @@ class FlyoutCamera:
         elif direction == "right":
             self.position += acceleration_ratio * self.move_speed * self.right
         elif direction == "up":
-            self.position += acceleration_ratio * self.move_speed * self.up
+            self.position += acceleration_ratio * self.move_speed * vec(0.0,1.0,0.0)
         elif direction == "down":
-            self.position -= acceleration_ratio * self.move_speed * self.up
+            self.position -= acceleration_ratio * self.move_speed * vec(0.0,1.0,0.0)
 
 
     def stop_keyboard(self):

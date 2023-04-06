@@ -54,7 +54,7 @@ class ShadowFrameBuffer:
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
         GL.glViewport(0, 0, *glfw.get_framebuffer_size(self.win))
 
-    def getDepthTexture(self): #get the resulting depth texture
+    def getDepthTexture(self): #get the resulting depth textureé
         return self.depthTexture
 
     def cleanUp(self):
