@@ -17,7 +17,6 @@ from quad import Quad
 import water
 from texture import Textured
 from shadow_map_manager import ShadowMapManager
-from noise import Noise
 import cloud
 import particles
 
@@ -410,6 +409,9 @@ class Viewer(Node):
         self.main_light = (4,1,4)
         self.DAY_TIME = 30 #tps du jour en secondes
 
+        #init lava_starting to flow flag 
+        self.flag_lava_start = 0
+        
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
         self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
         self.shadow_map_manager = ShadowMapManager(10.0,1.0,15.0, 200.0)
@@ -501,34 +503,32 @@ class Viewer(Node):
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             GL.glEnable(GL.GL_FRAMEBUFFER_SRGB)
+            
+            #if pour la lave ou non 
+            time=0
+            if (self.flag_lava_start != 0) :
+                time = timer() - self.flag_lava_start
+            
+            
             self.draw(view=self.camera.view_matrix(),
-                      projection=self.camera.projection_matrix(win_size),
-                      model=identity(),
-                      w_camera_position=cam_pos,
-                      light_dir=self.main_light,
-                      fog_color=fog,
-                      time_of_day = self.getCurrentTimeOfDay(),
-                      displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
-                      lava_speed = min(timer() / 30 , 1.0),
-                      near = self.camera.near_clip,
-                      far = self.camera.far_clip,           
-                      light_space_matrix = light_projection @ light_view,
-                      shadow_distance=self.shadow_map_manager.getShadowDistance())
+                    projection=self.camera.projection_matrix(win_size),
+                    model=identity(),
+                    w_camera_position=cam_pos,
+                    light_dir=self.main_light,
+                    fog_color=fog,
+                    time_of_day = self.getCurrentTimeOfDay(),
+                    displacement_speed = current_time * WAVE_SPEED_FACTOR % 1,
+                    lava_speed = min(time / 30 , 1.0),
+                    near = self.camera.near_clip,
+                    far = self.camera.far_clip,           
+                    light_space_matrix = light_projection @ light_view,
+                    shadow_distance=self.shadow_map_manager.getShadowDistance())
+        
             GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
             #Draw the FBOS texture in a quad in the corner of the screen
             Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
             # flush render commands, and swap draw buffers
 
-            #currentTime = glfw.get_time()
-            #self.framecount += 1
-            ## if a second has passed
-            #if (currentTime- self.previousTime >=1):
-            #    print(self.framecount)
-            #    self.framecount =0
-            #    RenderText(str(self.framecount), "textrender/arial.ttf", 36, quadShader).draw(view=self.trackball.view_matrix(),
-            #                                                                  projection=self.trackball.projection_matrix(win_size),
-            #                                                                  model=identity())
-            #    self.previousTime = currentTime
 
             glfw.swap_buffers(self.win)
 
@@ -536,6 +536,7 @@ class Viewer(Node):
             glfw.poll_events()
 
     def on_key(self, _win, key, _scancode, action, _mods):
+        #print( "position camera = ",self.camera.position)
         """ 'Q' or 'Escape' quits """
         if action == glfw.PRESS or action == glfw.REPEAT:
             self.key_handler(key)
@@ -557,15 +558,12 @@ class Viewer(Node):
                 self.camera.move_keyboard("up", self.delta_time)
             if  key== glfw.KEY_X:
                 self.camera.move_keyboard("down", self.delta_time) 
-        
-                
-    
-                    
+            if key== glfw.KEY_ENTER and action==glfw.PRESS:
+                self.flag_lava_start = timer() - 3
         elif action == glfw.RELEASE:
             if key == glfw.KEY_W or key == glfw.KEY_S or key == glfw.KEY_A or key == glfw.KEY_D or key == glfw.KEY_SPACE or key == glfw.KEY_X :
                 self.camera.stop_keyboard()
-            # call Node.key_handler which calls key_handlers for all drawables
-            self.key_handler(key)
+            
 
     def on_mouse_move(self, win, xpos, ypos):
         """ Rotate on left-click & drag, pan on right-click & drag """

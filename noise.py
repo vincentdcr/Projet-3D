@@ -1,14 +1,9 @@
 import numpy as np                  # all matrix manipulations & OpenGL args
-import core
-from texture import Texture, Textured
-from transform import normalized
-from PIL import Image
-from waterFrameBuffer import WaterFrameBuffers
+from texture import Texture
 import random
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from scipy.signal import medfilt2d
 
 
 class Noise():
@@ -52,8 +47,7 @@ class Noise():
         temp[0][33] = temp[32][1]
         temp[33][0] = temp[1][32]
         
-        
-    # 4 2 12      
+          
         
         for i in range(1, 33):
             for j in range(1, 33):
@@ -61,46 +55,7 @@ class Noise():
                 sides = (temp[i+1][j] + temp[i-1][j] + temp[i][j+1] + temp[i][j-1])/2.0
                 corners = (temp[i+1][j+1] + temp[i+1][j-1] + temp[i-1][j+1] + temp[i-1][j-1])/12.0
                 
-                self.map32[i-1][j-1] = center +sides+corners
-        #self.smooth()
-
-        
-
-    def smooth(self,type="mean",kernel=3) : # type : convol, mean, median, sd...
-        img = np.array(self.map32)
-        img1 = img.copy()
-        border = (kernel-1)/2
-        border = int(border)
-        if (len(img.shape)==3) :
-            colored = img.shape[2]
-        else : 
-            img = img.reshape(img.shape[0],img.shape[1],1)
-            img1 =img1.reshape(img1.shape[0],img1.shape[1],1)
-            colored = 1
-        for color in range(0,colored) :
-            lignemax = (img.shape[0]-border-1)
-            lignemax = int(lignemax)
-            for ligne in range(0,img.shape[0]) :
-                for colonne in range(0,img.shape[1]) :
-                    lignemin = (ligne-border)
-                    if (lignemin<0) :lignemin=0
-                    lignemax = (ligne+border+1) 
-                    if (lignemax>(img.shape[0]-1)) : lignemax = img.shape[0]-1
-                    colmin = (colonne-border)
-                    if colmin < 0 : colmin=0
-                    colmax = (colonne+border+1)
-                    if colmax>(img.shape[1]-1) : colmax = img.shape[1]-1
-                    extrait = img[lignemin:lignemax,colmin:colmax,(color):(color+1)]
-                    if type == "mean" :
-                        new_value = np.mean(extrait)
-                    elif type == "median" :
-                        new_value = np.median(extrait)
-                    elif type == "sd" :
-                        new_value = np.std(extrait, ddof  =1)
-                    img1[ligne,colonne,color] =  new_value
-        if (colored==1):
-            img1 = img1.reshape(img.shape[0],img.shape[1])
-        self.map32 = np.asarray(img1)     
+                self.map32[i-1][j-1] = center +sides+corners   
 
                 
         
