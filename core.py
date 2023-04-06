@@ -17,6 +17,9 @@ from quad import Quad
 import water
 from texture import Textured
 from shadow_map_manager import ShadowMapManager
+from noise import Noise
+import cloud
+
 #text functions
 from renderText import RenderText
 
@@ -192,13 +195,20 @@ class Node:
         """ Add drawables to this node, simply updating children list """
         self.children.extend(drawables)
 
-    def draw(self, model=identity(), draw_water_flag=True, **other_uniforms):
+    def draw(self, model=identity(), draw_water_flag=True, draw_cloud_flag=True, **other_uniforms):
         """ Recursive draw, passing down updated model matrix. """
         self.world_transform = model @ self.transform
         for child in self.children:
-            if (not isinstance(child, water.Water) or draw_water_flag):
-                child.draw(model=self.world_transform, **other_uniforms)
-            
+            if (not isinstance(child, water.Water) or draw_water_flag): 
+                if ( isinstance(child, cloud.Cloud)):
+                    if (not draw_cloud_flag):
+                        continue
+                    GL.glDisable(GL.GL_CULL_FACE)
+                    child.draw(model=self.world_transform, **other_uniforms)
+                    GL.glEnable(GL.GL_CULL_FACE)
+                else:
+                    child.draw(model=self.world_transform, **other_uniforms)
+
     def key_handler(self, key):
         """ Dispatch keyboard events to children with key handler """
         for child in (c for c in self.children if hasattr(c, 'key_handler')):
@@ -451,6 +461,7 @@ class Viewer(Node):
                       projection=light_projection,
                       model=identity(),
                       draw_water_flag = False,
+                      draw_cloud_flag = False,
                       light_dir=self.main_light)
             GL.glDisable(GL.GL_DEPTH_CLAMP)
             self.shadowFrameBuffer.unbindCurrentFrameBuffer()

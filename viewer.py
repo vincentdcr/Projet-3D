@@ -13,6 +13,9 @@ from water import Water
 from tree import Treemapping
 from GrassManager import Grass_blade
 from animation_rocks import RockTime
+from cloud import Cloud
+from noise import Noise
+
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
     """ Simple first textured object """
@@ -77,6 +80,10 @@ def main():
     waterShader = Shader("glsl/water.vert", "glsl/water.frag")
     reflectionShader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag") # reflection par rapport a la skybox
     #GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
+    cloudShader = Shader("glsl/cloud.vert", "glsl/cloud.frag")
+    
+    noiseMap = Noise()
+    
     
     terrain_textures = ("terrain_texture/blackrock.png", "terrain_texture/meadow.png", 
                        "terrain_texture/ocean.png", "terrain_texture/sand.png", "terrain_texture/rock_snow.png" )
@@ -110,7 +117,7 @@ def main():
     #viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/tronc.png", 30, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
-
+    viewer.add(Cloud(cloudShader, 513,513,noiseMap.getNoiseMapTexture()))
     # start rendering loop
     viewer.run()   
 
