@@ -7,9 +7,11 @@ Quaternion, graphics 4x4 matrices, and vector utilities.
 # Python built-in modules
 import math                 # mainly for trigonometry functions
 from numbers import Number  # useful to check type of arg: scalar or vector?
-
 # external module
 import numpy as np          # matrices, vectors & quaternions are numpy arrays
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
 
 
 # Some useful functions on vectors -------------------------------------------
@@ -28,7 +30,28 @@ def lerp(point_a, point_b, fraction):
     """ linear interpolation between two quantities with linear operators """
     return point_a + fraction * (point_b - point_a)
 
+def calc_normals(vertices, index):
+    normals = np.zeros(vertices.shape, dtype=vertices.dtype)
+    a = vertices[index[::3]]  # all 1st pts of triangles
+    b = vertices[index[1::3]] # all 2nd pts
+    c = vertices[index[2::3]]
+    ab = b - a
+    ac = c - a
+    normal = np.cross(ab, ac)
+    normal = np.apply_along_axis(normalized, axis=1, arr=normal)
+    np.add.at(normals, index[::3], normal)  # we add to normals elements from the index array the values of normal
+    np.add.at(normals, index[1::3], normal)
+    np.add.at(normals, index[2::3], normal)
+    return np.apply_along_axis(normalized, axis=1, arr=normals)
 
+
+def catmull_rom_spline(p0, p1, p2, p3, t): # that is a test to make things smoother
+    return 0.5 * (
+        (-t**3 + 2*t**2 - t) * p0
+        + (3*t**3 - 5*t**2 + 2) * p1
+        + (-3*t**3 + 4*t**2 + t) * p2
+        + (t**3 - t**2) * p3
+    )
 # Typical 4x4 matrix utilities for OpenGL ------------------------------------
 def identity():
     """ 4x4 identity matrix """
@@ -174,6 +197,7 @@ def quaternion_slerp(q0, q1, fraction):
 
 
 # a trackball class based on provided quaternion functions -------------------
+# OLD VERSION - SEE LATER FOR VIEWPORT VERSION
 class Trackball:
     """Virtual trackball for 3D scene viewing. Independent of window system."""
 
@@ -225,10 +249,115 @@ class Trackball:
         phi = 2 * math.acos(np.clip(np.dot(old, new), -1, 1))
         return quaternion_from_axis_angle(np.cross(old, new), radians=phi)
     
+    def getRotationMatrix(self):
+        R1 = ( 2*self.rotation[0]**2 + 2*self.rotation[1]**2 - 1, 2*self.rotation[1]*self.rotation[2] + 2*self.rotation[0]*self.rotation[3], 2*self.rotation[1]*self.rotation[3] - 2*self.rotation[0]*self.rotation[2] , 0)
+        R2 = ( 2*self.rotation[1]*self.rotation[2] - 2*self.rotation[0]*self.rotation[3], 2*self.rotation[0]**2 + 2*self.rotation[2]**2 - 1, 2*self.rotation[2]*self.rotation[3] + 2*self.rotation[0]*self.rotation[1] , 0)
+        R3 = ( 2*self.rotation[1]*self.rotation[3] + 2*self.rotation[0]*self.rotation[2], 2*self.rotation[2]*self.rotation[3] - 2*self.rotation[0]*self.rotation[1], 2*self.rotation[0]**2 + 2*self.rotation[3]**2  - 1, 0)
+        R4 = ( 0, 0, 0, 1)
+        return np.array( [R1, R2, R3], 'f')
+
     def getDirectionVector(self):
-        R1 = ( 2*self.rotation[0]**2 + 2*self.rotation[1]**2 - 1, 2*self.rotation[1]*self.rotation[2] + 2*self.rotation[0]*self.rotation[3], 2*self.rotation[1]*self.rotation[3] - 2*self.rotation[0]*self.rotation[2] )
-        R2 = ( 2*self.rotation[1]*self.rotation[2] - 2*self.rotation[0]*self.rotation[3], 2*self.rotation[0]**2 + 2*self.rotation[2]**2 - 1, 2*self.rotation[2]*self.rotation[3] + 2*self.rotation[0]*self.rotation[1] )
-        R3 = ( 2*self.rotation[1]*self.rotation[3] + 2*self.rotation[0]*self.rotation[2], 2*self.rotation[2]*self.rotation[3] - 2*self.rotation[0]*self.rotation[1], 2*self.rotation[0]**2 + 2*self.rotation[3]**2  - 1)
-        R = np.array( [R1, R2, R3], 'f')
-        dir_world = R @ vec(0.0,0.0,-1.0)
+        dir_world = self.getRotationMatrix() @ vec(0.0,0.0,-1.0,0.0)
         return normalized(dir_world)
+    
+    def getNearFarPlane(self):
+        return vec(0.1, 100) * self.distance  # proportion to dist
+    
+class FlyoutCamera:
+    def __init__(self, position=vec(0,0,0), up=vec(0,1,0), pitch=0.0, yaw=math.radians(-90.0), fov=70.0, near_clip=0.1, far_clip=512, sensitivity=0.2, max_speed=90.0, interp_time=0.0):
+        self.position = position
+        self.w_up = up
+        self.pitch = pitch
+        self.yaw = yaw
+        self.fov = fov
+        self.near_clip = near_clip
+        self.far_clip = far_clip
+        self.sensitivity = sensitivity
+        self.max_speed = max_speed
+        self.move_speed = 0.0
+        self.acceleration = 4.0
+        self.interpolation_time = interp_time 
+        self.target_yaw = math.radians(-90.0)
+        self.target_pitch = 0.0
+        self._update()
+
+    def view_matrix(self):
+        return lookat(self.position, self.position + self.front, self.up) 
+
+    def projection_matrix(self, winsize):
+        return perspective(self.fov, winsize[0] / winsize[1], self.near_clip, self.far_clip)
+
+    def rotate(self, old, new, delta) -> None:
+        x_offset = self.sensitivity /15 * (new[0] - old[0])
+        y_offset = self.sensitivity /15 * (new[1] - old[1])
+    
+        self.target_yaw += x_offset
+        self.target_yaw = self.target_yaw % (np.pi*2) # to prevent a possible overflow error / high float imprecisions
+        self.target_pitch += y_offset
+        
+        # prevent camera from flipping and singular matrix error
+        self.target_pitch = max(math.radians(-89), min(self.target_pitch, math.radians(89)))
+
+        # compute interpolation factor based on time since last input
+        if (self.interpolation_time==0):
+            t = 1.0
+        else:
+            t = min(1.0, delta / self.interpolation_time)
+        
+        # linear interpolation to smoothly move from the current yaw/pitch to the target values
+        self.yaw = lerp(self.yaw, self.target_yaw, t)
+        self.pitch = lerp(self.pitch, self.target_pitch, t)
+        
+        self._update()
+
+    def pan(self, old, new) -> None:
+        x_offset = self.sensitivity * (new[0] - old[0])
+        y_offset = self.sensitivity * (new[1] - old[1])
+        self.position += self.right * x_offset + self.up * y_offset
+
+    def zoom(self, delta):
+        self.fov -= delta * self.sensitivity
+        self.fov = max(min(self.fov, 120), 30)
+
+    def move_keyboard(self, direction, delta):
+        self.move_speed = min(self.move_speed + delta * self.max_speed, self.max_speed)
+        # logarithmic like acceleration curve up to max speed, normalized
+        acceleration_ratio = (1.0 - math.exp(-self.acceleration * delta)) / (1.0 - math.exp(-self.acceleration))
+
+        if direction == "forward":
+            self.position += acceleration_ratio * self.move_speed * self.front
+        elif direction == "backward":
+            self.position -= acceleration_ratio * self.move_speed * self.front
+        elif direction == "left":
+            self.position -= acceleration_ratio * self.move_speed * self.right
+        elif direction == "right":
+            self.position += acceleration_ratio * self.move_speed * self.right
+        elif direction == "up":
+            self.position += acceleration_ratio * self.move_speed * vec(0.0,1.0,0.0)
+        elif direction == "down":
+            self.position -= acceleration_ratio * self.move_speed * vec(0.0,1.0,0.0)
+
+
+    def stop_keyboard(self):
+        # called if no directional keys are pressed
+        self.move_speed = 0.0
+
+    def get_look_direction(self):
+        return np.array([
+            np.cos(self.yaw) * np.cos(self.pitch),
+            np.sin(self.pitch),
+            np.sin(self.yaw) * np.cos(self.pitch)
+        ])
+    
+    def underwater_cam(self, water_height):
+        # place ourselves at the same distance underwater as we are over it with a flipped pitch
+        self.position[1] = self.position[1] - 2*(self.position[1] - water_height)
+        self.pitch = -self.pitch
+        self._update()
+
+    # we set the yaw to -90 to get the correct front vector at the start (0,0,-1) (instead of (1,0,0))
+    def _update(self):
+        self.front = normalized(self.get_look_direction())
+        self.right = normalized(np.cross(self.front, self.w_up))
+        self.up    = normalized(np.cross(self.right, self.front))
+

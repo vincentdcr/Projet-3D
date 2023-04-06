@@ -9,8 +9,6 @@ in vec2 frag_tex_coords;
 
 void main()
 {
-    vec4 color = texture(cloud_map, frag_tex_coords/4);
-    if(color.a < 0.1)
-        discard;
-    out_color =color;
+    vec4 color = texture(cloud_map, frag_tex_coords/4 + displacement_speed/16);
+    out_color = vec4(color.x);
 }

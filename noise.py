@@ -141,9 +141,6 @@ class Noise():
                     # Add the noise value to the corresponding pixel in map256
                     map256[y][x] += noise / pow(2, octave)
                     
-        tex = Image.fromarray(map256)
-        tex.show()
-                    
     def ExpFilter(self, map):
         cover = 20.0
         sharpness = 0.95

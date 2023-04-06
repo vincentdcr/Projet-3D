@@ -10,11 +10,14 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 import assimpcy                     # 3D resource loader
 
 # our transform functions
-from transform import Trackball, identity, lookat
+from transform import identity, vec, FlyoutCamera
 from waterFrameBuffer import WaterFrameBuffers
-from noise import Noise
+from shadowFrameBuffer import ShadowFrameBuffer
 from quad import Quad
 import water
+from texture import Textured
+from shadow_map_manager import ShadowMapManager
+from noise import Noise
 import cloud
 
 #text functions
@@ -106,6 +109,8 @@ class Shader:
         GL.GL_FLOAT_MAT2: GL.glUniformMatrix2fv,
         GL.GL_FLOAT_MAT3: GL.glUniformMatrix3fv,
         GL.GL_FLOAT_MAT4: GL.glUniformMatrix4fv,
+        GL.GL_SAMPLER_2D_SHADOW: GL.glUniform1iv,
+        GL.GL_SAMPLER_2D_ARRAY: GL.glUniform1iv,
     }
 
 
@@ -190,12 +195,14 @@ class Node:
         """ Add drawables to this node, simply updating children list """
         self.children.extend(drawables)
 
-    def draw(self, model=identity(), draw_water_flag=True, **other_uniforms):
+    def draw(self, model=identity(), draw_water_flag=True, draw_cloud_flag=True, **other_uniforms):
         """ Recursive draw, passing down updated model matrix. """
         self.world_transform = model @ self.transform
         for child in self.children:
             if (not isinstance(child, water.Water) or draw_water_flag): 
                 if ( isinstance(child, cloud.Cloud)):
+                    if (not draw_cloud_flag):
+                        continue
                     GL.glDisable(GL.GL_CULL_FACE)
                     child.draw(model=self.world_transform, **other_uniforms)
                     GL.glEnable(GL.GL_CULL_FACE)
@@ -302,12 +309,12 @@ def load(file, shader, tex_file=None, **params):
             k_s=mat.get('COLOR_SPECULAR', (1, 1, 1)),
             k_a=mat.get('COLOR_AMBIENT', (0.4, 0.4, 0.4)),
             s=mat.get('SHININESS', 32),
+            
         )
         attributes = dict(
             position=mesh.mVertices,
             normal=mesh.mNormals,
         )
-
         # ---- optionally add texture coordinates attribute if present
         if mesh.HasTextureCoords[0]:
             attributes.update(tex_coord=mesh.mTextureCoords[0])
@@ -371,8 +378,9 @@ class Viewer(Node):
         # make win's OpenGL context current; no OpenGL calls can happen before
         glfw.make_context_current(self.win)
 
-        # initialize trackball
-        self.trackball = Trackball()
+        # initialize FlyoutCamera
+        self.camera = FlyoutCamera(position=vec(0.0,0.0,1.0))
+        self.last_time = timer()
         self.mouse = (0, 0)
 
         # register event handlers
@@ -396,6 +404,7 @@ class Viewer(Node):
 
         #init global light
         self.main_light = (4,1,4)
+        self.DAY_TIME = 30 #tps du jour en secondes
         
         #init time counter
         
@@ -403,75 +412,108 @@ class Viewer(Node):
         self.framecount = 0
 
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
-
+        self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
+        self.shadow_map_manager = ShadowMapManager(10.0,1.0,15.0, 200.0)
+        
+        # inti shader used for animation
+        self.shader = Shader("glsl/texture.vert", "glsl/texture.frag")
 
     def run(self):
         """ Main render loop for this OpenGL window """
 
-        #quadShader = Shader("glsl/fboviz.vert", "glsl/fboviz.frag")
+        quadShader = Shader("glsl/fboviz.vert", "glsl/fboviz.frag")
 
         # setup quad mesh for FBO vizualisation
-        #base_coords = ((-1, -1, 0), (1, -1, 0), (1, 1, 0), (-1, 1, 0))
-        #indices = np.array((1, 3, 0, 1 , 2 , 3), np.uint32)
-        #texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
-        #mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
+        base_coords = ((-1, -1, 0), (1, -1, 0), (1, 1, 0), (-1, 1, 0))
+        indices = np.array((1, 3, 0, 1 , 2 , 3), np.uint32)
+        texcoords = ([0,0], [1, 0], [1, 1], [0, 1])
+        mesh = Mesh(quadShader, attributes=dict(position=base_coords, tex_coord=texcoords), index=indices)
 
-        WATER_HEIGHT = -60 # Should be synced with water height from water.py
+        WATER_HEIGHT = -40 # Should be synced with water height from water.py
         WAVE_SPEED_FACTOR = 0.02
         reflection_clip_plane = (0.0,1.0,0.0,-WATER_HEIGHT+0.5) # 4th param = -(water height) + small overlap to prevent glitches
         refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
-        fog = (1,0.2,0.2)
+        fog = (0.75,0.4,0.25)
 
         while not glfw.window_should_close(self.win):
+
+            current_time = timer()
+            self.delta_time = current_time - self.last_time
+            self.last_time = current_time
                 
             # clear draw buffer and depth buffer (<-TP2)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
-            self.main_light = ( np.sin(timer()) * 128, 35, 0)
+            self.main_light = ( 256 * np.cos(timer() / self.DAY_TIME), 256 * np.abs(np.sin(timer () / self.DAY_TIME)), 
+                               np.abs(256 * np.sin(timer() / self.DAY_TIME)) )
+            cam_pos = np.linalg.inv(self.camera.view_matrix())[:, 3]
+
+
             # draw our scene objects
+            self.shadowFrameBuffer.bindFrameBuffer()
+            GL.glEnable(GL.GL_DEPTH_CLAMP) # so that object in front of the frustum can still cast shadows
+            light_view, light_projection = self.shadow_map_manager.compute_matrices_for_shadow_mapping(self.main_light, 
+                                                                                                       self.camera, cam_pos,
+                                                                                                       win_size)
+ 
+            self.draw(view=light_view,
+                      projection=light_projection,
+                      model=identity(),
+                      draw_water_flag = False,
+                      draw_cloud_flag = False,
+                      light_dir=self.main_light)
+            GL.glDisable(GL.GL_DEPTH_CLAMP)
+            self.shadowFrameBuffer.unbindCurrentFrameBuffer()
+
             self.waterFrameBuffers.bindReflectionFrameBuffer()
             GL.glEnable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
-            cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
-            cam_pos[1] = cam_pos[1] - 2*(cam_pos[1] - WATER_HEIGHT) #cam_pos - distance (same dist underwater)
-            self.draw(view=self.compute_view_matrix_for_reflection(cam_pos),
-                      projection=self.trackball.projection_matrix(win_size),
+            
+            self.camera.underwater_cam(WATER_HEIGHT)
+            self.draw(view=self.camera.view_matrix(),
+                      projection=self.camera.projection_matrix(win_size),
                       model=identity(),
                       draw_water_flag = False,
-                      w_camera_position=cam_pos,
+                      w_camera_position=self.camera.position,
                       light_dir=self.main_light,
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
-                      clipping_plane= reflection_clip_plane)
+                      clipping_plane= reflection_clip_plane,
+                      light_space_matrix = light_projection @ light_view,
+                      shadow_distance=self.shadow_map_manager.getShadowDistance())
+            self.camera.underwater_cam(WATER_HEIGHT)
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             self.waterFrameBuffers.bindRefractionFrameBuffer()
-            cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
-            self.draw(view=self.trackball.view_matrix(),
-                      projection=self.trackball.projection_matrix(win_size),
+            self.draw(view=self.camera.view_matrix(),
+                      projection=self.camera.projection_matrix(win_size),
                       model=identity(),
                       draw_water_flag = False,
                       w_camera_position=cam_pos,
                       light_dir=self.main_light,
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
-                      clipping_plane= refraction_clip_plane)
+                      clipping_plane= refraction_clip_plane,
+                      light_space_matrix = light_projection @ light_view,
+                      shadow_distance=self.shadow_map_manager.getShadowDistance())
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
             GL.glEnable(GL.GL_FRAMEBUFFER_SRGB)
-            self.draw(view=self.trackball.view_matrix(),
-                      projection=self.trackball.projection_matrix(win_size),
+            self.draw(view=self.camera.view_matrix(),
+                      projection=self.camera.projection_matrix(win_size),
                       model=identity(),
                       w_camera_position=cam_pos,
                       light_dir=self.main_light,
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
-                      displacement_speed = timer() * WAVE_SPEED_FACTOR % 1)
+                      displacement_speed = timer() * WAVE_SPEED_FACTOR % 1,
+                      lava_speed = min(timer() / 30 , 1.0),
+                      near = self.camera.near_clip,
+                      far = self.camera.far_clip,           
+                      light_space_matrix = light_projection @ light_view,
+                      shadow_distance=self.shadow_map_manager.getShadowDistance())
             GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
-            
-            # Draw the FBOS texture in a quad in the corner of the screen
-            #Quad(self.waterFrameBuffers.getReflectionTexture(), mesh).draw(view=self.trackball.view_matrix(),
-            #             projection=self.trackball.projection_matrix(win_size),
-            #             model=identity())
+            #Draw the FBOS texture in a quad in the corner of the screen
+            Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
             # flush render commands, and swap draw buffers
 
             #currentTime = glfw.get_time()
@@ -493,22 +535,32 @@ class Viewer(Node):
     def on_key(self, _win, key, _scancode, action, _mods):
         """ 'Q' or 'Escape' quits """
         if action == glfw.PRESS or action == glfw.REPEAT:
+            self.key_handler(key)
             if key == glfw.KEY_ESCAPE or key == glfw.KEY_Q:
                 glfw.set_window_should_close(self.win, True)
-            if key == glfw.KEY_W:
+            if key == glfw.KEY_Z:
                 GL.glPolygonMode(GL.GL_FRONT_AND_BACK, next(self.fill_modes))
-            if key == glfw.KEY_SPACE:
+            if key == glfw.KEY_R:
                 glfw.set_time(0.0)
-            if  key== glfw.KEY_UP:
-                self.trackball.pan((0,0), (0,-1))
-            if  key== glfw.KEY_DOWN:
-                self.trackball.pan((0,0), (0,1))
-            if  key== glfw.KEY_LEFT:
-                self.trackball.pan((0,0), (-1,0))
-            if  key== glfw.KEY_RIGHT:
-                self.trackball.pan((0,0), (1,0))
-            if key == glfw.KEY_O:
-                self.trackball.pan((0,0), (0,-1))    
+            if  key== glfw.KEY_W:
+                self.camera.move_keyboard("forward", self.delta_time)
+            if  key== glfw.KEY_S:
+                self.camera.move_keyboard("backward", self.delta_time)
+            if  key== glfw.KEY_A:
+                self.camera.move_keyboard("left", self.delta_time)
+            if  key== glfw.KEY_D:
+                self.camera.move_keyboard("right", self.delta_time)
+            if  key== glfw.KEY_SPACE:
+                self.camera.move_keyboard("up", self.delta_time)
+            if  key== glfw.KEY_X:
+                self.camera.move_keyboard("down", self.delta_time) 
+        
+                
+    
+                                
+        elif action == glfw.RELEASE:
+            if key == glfw.KEY_W or key == glfw.KEY_S or key == glfw.KEY_A or key == glfw.KEY_D or key == glfw.KEY_SPACE or key == glfw.KEY_X :
+                self.camera.stop_keyboard()
             # call Node.key_handler which calls key_handlers for all drawables
             self.key_handler(key)
 
@@ -517,13 +569,13 @@ class Viewer(Node):
         old = self.mouse
         self.mouse = (xpos, glfw.get_window_size(win)[1] - ypos)
         if glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_LEFT):
-            self.trackball.drag(old, self.mouse, glfw.get_window_size(win))
+            self.camera.rotate(old, self.mouse, self.delta_time)
         if glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_RIGHT):
-            self.trackball.pan(old, self.mouse)
-
+            self.camera.pan(old, self.mouse)
+ 
     def on_scroll(self, win, _deltax, deltay):
         """ Scroll controls the camera distance to trackball center """
-        self.trackball.zoom(deltay, glfw.get_window_size(win)[1])
+        self.camera.zoom(deltay)
 
     def on_size(self, _win, _width, _height):
         """ window size update => update viewport to new framebuffer size """
@@ -535,15 +587,11 @@ class Viewer(Node):
     def getCurrentTimeOfDay(self):
         """ return a value between 1 (day) and 0 (night) to be used in the skyboxShader"""
         t = timer()
-        DAY_TIME = 30 #tps du jour en secondes
-        return (np.cos((t*np.pi)/DAY_TIME)+1)/2
+        return (np.cos((t*np.pi)/self.DAY_TIME)+1)/2
     
     def getWaterFrameBuffers(self):
         return self.waterFrameBuffers
-
-    def compute_view_matrix_for_reflection(self, cam_pos):
-        invertedDirection = self.trackball.getDirectionVector()
-        invertedDirection[1] = - invertedDirection[1]
-        lookAtPosition = cam_pos[:3] + self.trackball.distance * invertedDirection
-        return lookat(cam_pos[:3], lookAtPosition, (0.0,1.0,0.0))
+    
+    def getShadowFrameBuffer(self):
+        return self.shadowFrameBuffer
     
