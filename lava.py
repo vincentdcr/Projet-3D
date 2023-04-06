@@ -3,7 +3,6 @@ import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 import core
 from texture import Texture, WaterTextured
-from transform import normalized
 
 
 # -------------- Terrain ---------------------------------
