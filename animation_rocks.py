@@ -32,15 +32,32 @@ class RockTime(Node):
             
 
     def key_handler(self,key):
+        
         if key == glfw.KEY_ENTER:
-            
+            print("key_handler lava animation")
             LavaShader = Shader("glsl/Lava.vert", "glsl/Lava.frag")
-            Lava_node = Node(transform=translate(-14,0,-21))
+            Lava_node = Node(transform=translate(-12,0,-20))
             Lava_node.add(Lava(LavaShader, 90, 80, "terrain_texture/noisemap.png", "dudv.png", "waternormalmap.png"))
-            self.add(Lava_node)
-
             # make a small plane, put it at the origin and texture it with terrain_texture/lava-texture-free.jpg
             time = timer()
+            
+            #plane animation 
+            translate_keys = {time : vec(0,0,0),
+                              10 + time : vec(0,7,0)
+                            }
+            rotate_keys = {time: quaternion_from_euler(0, 0, 0),
+                           10 + time: quaternion_from_euler(0, 0, 0)
+                        }
+            scale_keys = {time: 1.15,
+                          10 + time: 1.15
+                        }
+            keynode_plan = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys)
+            keynode_plan.add(Lava_node)
+            self.add(keynode_plan)
+            
+            
+            
+            
             # translate_keys = {0+time : vec(-16,0,-18),
             #                   1+time : vec(-68,61,-52),
             #                   2+time : vec(-172,30,-171),

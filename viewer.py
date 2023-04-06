@@ -114,7 +114,6 @@ def main():
     
     viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/bark.jpg", 500, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(RockTime(shader, reflectionShader))
-    #viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/tronc.png", 30, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
     viewer.add(Cloud(cloudShader, 513,513,noiseMap.getNoiseMapTexture()))
