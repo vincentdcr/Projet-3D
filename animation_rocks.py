@@ -15,7 +15,7 @@ class RockTime(Node):
         self.obj_shader = shader
         res = random.randint(0, 5)
         if res == 0:
-            obj_filename = "texture/bunny.obj"
+            obj_filename = "texture/bunny/bunny.obj"
             self.obj_shader = shader_chroma
         else:
             obj_filename = "texture/rock/Rock1/Rock1.obj"
