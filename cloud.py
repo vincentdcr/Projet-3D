@@ -17,7 +17,7 @@ class Cloud(Textured):
     
     
     def __init__(self, shader, map_width, map_height, noise_map):
-        CLOUD_HEIGHT = 50
+        CLOUD_HEIGHT = 60
 
         base_coords = np.array([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1]])
         scaled_coords = base_coords

@@ -3,8 +3,8 @@ import glfw                         # lean window system wrapper for OpenGL
 
 class ShadowFrameBuffer:
     
-    TEX_WIDTH = 1024
-    TEX_HEIGHT = 1024
+    TEX_WIDTH = 4096
+    TEX_HEIGHT = 4096
     
     frameBuffer = 0
     depthTexture = 0

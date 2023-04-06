@@ -451,6 +451,13 @@ class Viewer(Node):
         refraction_clip_plane = (0.0,-1.0,0.0,WATER_HEIGHT+0.5)  # = water height
         fog = (0.75,0.4,0.25)
 
+        print(f'\n============== CONTROLS ==============\n'
+            f' WASD       : move the camera forward/backward/left/right\n'
+            f' X/SPACE    : move the camera down/up\n'
+            f' Enter      : (re)launch the animation\n'
+            f' R          : restart the global timer\n',
+            f'W          : show the wireframe/vertex view\n')
+
         while not glfw.window_should_close(self.win):
 
             current_time = timer()
@@ -558,6 +565,8 @@ class Viewer(Node):
                 GL.glPolygonMode(GL.GL_FRONT_AND_BACK, next(self.fill_modes))
             if key == glfw.KEY_R:
                 glfw.set_time(0.0)
+                self.flag_lava_start = 0
+                self.launch_particles = False
             if  key== glfw.KEY_W:
                 self.camera.move_keyboard("forward", self.delta_time)
             if  key== glfw.KEY_S:

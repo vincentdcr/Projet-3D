@@ -32,7 +32,7 @@ class Particle():
                 self.camera_distance = -1.0
 
 class ParticlesEmitter(Textured):
-    def __init__(self, shader, scale=0.25, color=(0.7,0.2,0.0,1.0), life=2.0, pos=np.array([0.0,20.0,0.0]), speed=np.array([0.0,10.0,0.0]), max_count=1000):
+    def __init__(self, shader, scale=0.25, color=(0.7,0.2,0.0,1.0), life=2.0, pos=np.array([0.0,23.0,0.0]), speed=np.array([0.0,10.0,0.0]), max_count=1000):
         self.max_particles_count = max_count
         self.shader = shader
         self.scale = scale
