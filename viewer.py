@@ -10,7 +10,9 @@ from terrain import Terrain
 from transform import translate, vec, quaternion
 from animation import KeyFrameControlNode
 from water import Water
+from cloud import Cloud
 from GrassManager import Grass_blade
+from noise import Noise
 
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
@@ -74,6 +76,9 @@ def main():
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
     waterShader = Shader("glsl/water.vert", "glsl/water.frag")
     GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
+    cloudShader = Shader("glsl/cloud.vert", "glsl/cloud.frag")
+    
+    noiseMap = Noise()
     
     
     
@@ -91,7 +96,7 @@ def main():
     #viewer.add(Terrain(normalvizShader, "grass.png", 256, 256, "heightmap.png"))
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
-
+    viewer.add(Cloud(cloudShader, 513,513,noiseMap.getNoiseMapTexture()))
     # start rendering loop
     viewer.run()   
 

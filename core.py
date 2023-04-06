@@ -12,8 +12,10 @@ import assimpcy                     # 3D resource loader
 # our transform functions
 from transform import Trackball, identity, lookat
 from waterFrameBuffer import WaterFrameBuffers
+from noise import Noise
 from quad import Quad
 import water
+import cloud
 
 #text functions
 from renderText import RenderText
@@ -192,8 +194,13 @@ class Node:
         """ Recursive draw, passing down updated model matrix. """
         self.world_transform = model @ self.transform
         for child in self.children:
-            if (not isinstance(child, water.Water) or draw_water_flag):
-                child.draw(model=self.world_transform, **other_uniforms)
+            if (not isinstance(child, water.Water) or draw_water_flag): 
+                if ( isinstance(child, cloud.Cloud)):
+                    GL.glDisable(GL.GL_CULL_FACE)
+                    child.draw(model=self.world_transform, **other_uniforms)
+                    GL.glEnable(GL.GL_CULL_FACE)
+                else:
+                    child.draw(model=self.world_transform, **other_uniforms)
 
     def key_handler(self, key):
         """ Dispatch keyboard events to children with key handler """
@@ -450,7 +457,7 @@ class Viewer(Node):
                       clipping_plane= refraction_clip_plane)
             self.waterFrameBuffers.unbindCurrentFrameBuffer()
             GL.glDisable(GL.GL_CLIP_PLANE0) # for reflection/refraction clip planes
-
+            GL.glEnable(GL.GL_FRAMEBUFFER_SRGB)
             self.draw(view=self.trackball.view_matrix(),
                       projection=self.trackball.projection_matrix(win_size),
                       model=identity(),
@@ -459,6 +466,7 @@ class Viewer(Node):
                       fog_color=fog,
                       time_of_day = self.getCurrentTimeOfDay(),
                       displacement_speed = timer() * WAVE_SPEED_FACTOR % 1)
+            GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
             
             # Draw the FBOS texture in a quad in the corner of the screen
             #Quad(self.waterFrameBuffers.getReflectionTexture(), mesh).draw(view=self.trackball.view_matrix(),

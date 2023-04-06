@@ -16,7 +16,9 @@ class Texture:
             # imports image as a numpy array in exactly right format
             if(isinstance(tex_file,Image.Image)):
                 tex = tex_file
-            else:
+            elif (isinstance(tex_file, np.ndarray)):
+                tex = Image.fromarray(tex_file)
+            else :
                 tex = Image.open(tex_file).convert('RGBA')
             GL.glBindTexture(tex_type, self.glid)
             GL.glTexImage2D(tex_type, 0, GL.GL_RGBA, tex.width, tex.height,
@@ -77,12 +79,15 @@ class Textured:
     def draw(self, primitives=GL.GL_TRIANGLES, **uniforms):
         for index, (name, texture) in enumerate(self.textures.items()):
             GL.glActiveTexture(GL.GL_TEXTURE0 + index)
-            if(isinstance(texture, np.uint32)): #for self generated texture from FBOS
+            if(isinstance(texture, np.uint32) ): #for self generated texture from FBOS
                 GL.glBindTexture(GL.GL_TEXTURE_2D, texture)
             else:
                 GL.glBindTexture(texture.type, texture.glid)
             uniforms[name] = index
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         self.drawable.draw(primitives=primitives, **uniforms)
+        GL.glDisable(GL.GL_BLEND)
 
 class TexturedCube:
     """ Drawable mesh decorator that activates and binds OpenGL textures """
