@@ -19,8 +19,6 @@ class RockTime(Node):
             self.obj_shader = shader_chroma
         else:
             obj_filename = "texture/rock/Rock1/Rock1.obj"
-            
-
         obj = load(obj_filename, self.obj_shader)
 
         for i in range(4):
@@ -29,16 +27,29 @@ class RockTime(Node):
             
 
     def key_handler(self,key):
+        
         if key == glfw.KEY_ENTER:
-            
+            print("key_handler lava animation")
             LavaShader = Shader("glsl/Lava.vert", "glsl/Lava.frag")
-            Lava_node = Node(transform=translate(-14,0,-21))
+            Lava_node = Node(transform=translate(-12,0,-20))
             Lava_node.add(Lava(LavaShader, 90, 80, "texture/terrain_texture/noisemap.png", "texture/water/dudv.png", "texture/water/waternormalmap.png"))
-            self.add(Lava_node)
-
             # make a small plane, put it at the origin and texture it with terrain_texture/lava-texture-free.jpg
             time = timer()
-
+            
+            #plane animation 
+            translate_keys = {time : vec(0,0,0),
+                              10 + time : vec(0,7,0)
+                            }
+            rotate_keys = {time: quaternion_from_euler(0, 0, 0),
+                           10 + time: quaternion_from_euler(0, 0, 0)
+                        }
+            scale_keys = {time: 1.15,
+                          10 + time: 1.15
+                        }
+            keynode_plan = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys)
+            keynode_plan.add(Lava_node)
+            self.add(keynode_plan)
+            
             # First corner
             translate_keys1 = {
                 0+time: vec(-16, 0, -18),
@@ -62,7 +73,6 @@ class RockTime(Node):
             keynode1 = KeyFrameControlNode(translate_keys1, rotate_keys, scale_keys)
             keynode1.add(self.obj_array[0])
             self.add(keynode1)
-
             # Second corner
             translate_keys2 = {
                 0+time: vec(-16, 0, -18),
