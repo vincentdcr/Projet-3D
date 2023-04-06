@@ -22,8 +22,7 @@ class RockTime(Node):
             self.obj_shader = shader_chroma
         else:
             obj_filename = "rock/Rock1/Rock1.obj"
-            
-
+        
         obj = load(obj_filename, self.obj_shader)
 
         for i in range(4):
@@ -55,27 +54,6 @@ class RockTime(Node):
             keynode_plan.add(Lava_node)
             self.add(keynode_plan)
             
-            
-            
-            
-            # translate_keys = {0+time : vec(-16,0,-18),
-            #                   1+time : vec(-68,61,-52),
-            #                   2+time : vec(-172,30,-171),
-            #                   3+time : vec(-201,-37,-211)}
-                            
-            # rotate_keys = {0+time: quaternion(),
-            #                1+time: quaternion_from_euler(0, -200, -100),
-            #                2+time: quaternion_from_euler(0,-300,-150),
-            #                3+time:  quaternion()}
-            # scale_keys = {0+time: 5,
-            #               1+time: 5,
-            #               2+time: 5,
-            #               3+time: 5}
-
-            # keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys)
-            # keynode.add(self.obj_array[0])
-            # self.add(keynodetime = timer()
-
             # First corner
             translate_keys1 = {
                 0+time: vec(-16, 0, -18),
@@ -99,7 +77,6 @@ class RockTime(Node):
             keynode1 = KeyFrameControlNode(translate_keys1, rotate_keys, scale_keys)
             keynode1.add(self.obj_array[0])
             self.add(keynode1)
-
             # Second corner
             translate_keys2 = {
                 0+time: vec(-16, 0, -18),
