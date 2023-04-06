@@ -1,12 +1,9 @@
 import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Node, Mesh
-from texture import Textured, TexturedPyramid, TexturedSphere, TexturedCylinder, Texture, TexturedTiltedCylinder, Cone, PineCone
-from transform import normalized, calc_normals
-from PIL import Image
-import glfw        
+from texture import Textured, Texture
+from transform import calc_normals       
 import random
-from math import radians
        
 class Treemapping(Node):
     def __init__(self, shader, position, leavesTextures_path1, leavesTextures_path2, trunkTextures_path, nb_gen, shadow_map_tex):

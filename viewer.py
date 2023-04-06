@@ -79,43 +79,29 @@ def main():
     skyboxShader = Shader("glsl/skybox.vert", "glsl/skybox.frag")
     waterShader = Shader("glsl/water.vert", "glsl/water.frag")
     reflectionShader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag") # reflection par rapport a la skybox
-    #GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
     cloudShader = Shader("glsl/cloud.vert", "glsl/cloud.frag")
     
     noiseMap = Noise()
     
     
-    terrain_textures = ("terrain_texture/blackrock.png", "terrain_texture/meadow.png", 
-                       "terrain_texture/ocean.png", "terrain_texture/sand.png", "terrain_texture/rock_snow.png" )
-    terrain_normal_textures = ("terrain_texture/blackrock_normal.png", "terrain_texture/meadow_normal.png", 
-                       "terrain_texture/ocean_normal.png", "terrain_texture/sand_normal.png",
-                       "terrain_texture/rock_snow_normal.png" )
+    terrain_textures = ("texture/terrain_texture/blackrock.png", "texture/terrain_texture/meadow.png", 
+                       "texture/terrain_texture/ocean.png", "texture/terrain_texture/sand.png", "texture/terrain_texture/rock_snow.png" )
+    terrain_normal_textures = ("texture/terrain_texture/blackrock_normal.png", "texture/terrain_texture/meadow_normal.png", 
+                       "texture/terrain_texture/ocean_normal.png", "texture/terrain_texture/sand_normal.png",
+                       "texture/terrain_texture/rock_snow_normal.png" )
 
     
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
-    #viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, normalvizShader, light_dir=light_dir)]) 
-    # translate_keys = {0: vec(0,0,0), 1: vec(1,0,0), 2 : vec(1,1,0), 3 : vec(0,1,0), 4 : vec(256,80,0)}
-    # rotate_keys = {0: quaternion(), 1: quaternion(), 2 : quaternion(), 3 :  quaternion(), 4 :  quaternion()}
-    # scale_keys = {0: 1, 1: 1, 2 : 1, 3 : 1, 4 : 1}
-    # keynode = KeyFrameControlNode(translate_keys, rotate_keys, scale_keys) 
-    # keynode.add(Node(load("cube.obj", lightCubeShader)))
-    # viewer.add(keynode)
-    
-    
-    #viewer.add(load("rock/Rock1/Rock1.obj", shader))
-    #viewer.add(Grass_blade(GrassShader, "grass/grass.png"))
-    terrain = Terrain(shaderTerrain, terrain_textures, terrain_normal_textures, "terrain_texture/noise_map.png", "terrain_texture/lava_map.png",
-                       "dudv.png", "waternormalmap.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
+    terrain = Terrain(shaderTerrain, terrain_textures, terrain_normal_textures, "texture/terrain_texture/noise_map.png", "texture/terrain_texture/lava_map.png",
+                       "texture/water/dudv.png", "texture/water/waternormalmap.png", 513, 513, "texture/heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer())
 
     viewer.add(terrain)
-    #viewer.add(Terrain(normalvizShader, "terrain_texture/blackrock.png", "terrain_texture/blackrock_normal.png", 
-    #                   "terrain_texture/meadow.png", "terrain_texture/meadow_normal.png", "terrain_texture/noise_map.png", 513, 513, "heightmapstests/Heightmap.png",  viewer.getShadowFrameBuffer()))
     vertices = terrain.getVertices()    
     
-    viewer.add(Treemapping(shader, vertices , "textures_wood/pineleaf2.png", "textures_wood/leaves.png", "textures_wood/bark.jpg", 500, viewer.getShadowFrameBuffer().getDepthTexture()))
+    viewer.add(Treemapping(shader, vertices , "texture/textures_wood/pineleaf2.png", "texture/textures_wood/leaves.png", "texture/textures_wood/bark.jpg", 500, viewer.getShadowFrameBuffer().getDepthTexture()))
     viewer.add(RockTime(shader, reflectionShader))
-    viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
-    viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
+    viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "texture/water/dudv.png", "texture/water/waternormalmap.png"))
+    viewer.add(CubeMapTexture(skyboxShader, "texture/skybox/skyboxday", "texture/skybox/skyboxnight/"))
     viewer.add(Cloud(cloudShader, 513,513,noiseMap.getNoiseMapTexture()))
     # start rendering loop
     viewer.run()   

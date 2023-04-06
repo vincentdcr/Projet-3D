@@ -1,11 +1,8 @@
-import OpenGL.GL as GL
-from lava import Lava
-import numpy as np                  # all matrix manipulations & OpenGL args
+
+from lava import Lava                 
 from core import Node, Shader,load, timer
-from texture import Textured, TexturedPyramid, TexturedSphere, TexturedCylinder, Texture, TexturedTiltedCylinder, Cone
 from animation import KeyFrameControlNode
 from transform import quaternion_from_euler, translate, vec, quaternion
-from water import Water
 import glfw
 
 import random # 1/5 pas rocher mais lapins (chromatiques si possible)
@@ -18,11 +15,10 @@ class RockTime(Node):
         self.obj_shader = shader
         res = random.randint(0, 5)
         if res == 0:
-            obj_filename = "bunny.obj"
+            obj_filename = "texture/bunny/bunny.obj"
             self.obj_shader = shader_chroma
         else:
-            obj_filename = "rock/Rock1/Rock1.obj"
-        
+            obj_filename = "texture/rock/Rock1/Rock1.obj"
         obj = load(obj_filename, self.obj_shader)
 
         for i in range(4):
@@ -36,7 +32,7 @@ class RockTime(Node):
             print("key_handler lava animation")
             LavaShader = Shader("glsl/Lava.vert", "glsl/Lava.frag")
             Lava_node = Node(transform=translate(-12,0,-20))
-            Lava_node.add(Lava(LavaShader, 90, 80, "terrain_texture/noisemap.png", "dudv.png", "waternormalmap.png"))
+            Lava_node.add(Lava(LavaShader, 90, 80, "texture/terrain_texture/noisemap.png", "texture/water/dudv.png", "texture/water/waternormalmap.png"))
             # make a small plane, put it at the origin and texture it with terrain_texture/lava-texture-free.jpg
             time = timer()
             

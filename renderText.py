@@ -3,7 +3,7 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from PIL import ImageFont, ImageDraw, Image
 import numpy as np
-from texture import Texture, Textured
+from texture import Texture
 import core 
 from quad import Quad
 

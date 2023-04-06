@@ -4,8 +4,8 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 from core import  Mesh
 from texture import Texture, Textured, TextureArray
 from transform import normalized, calc_normals
-from PIL import Image, ImageOps
-from shadowFrameBuffer import ShadowFrameBuffer
+from PIL import Image
+
 
  
 # -------------- Terrain ---------------------------------
@@ -17,12 +17,10 @@ class Terrain(Textured):
         indices = generate_indices(map_width, map_height)
         texcoords = generate_texcoords(map_width, map_height)
         normals = calc_normals(self.vertices, indices) 
-        #tangents = generate_tangents(vertices, indices, texcoords)
         # setup plane mesh to be textured
         mesh = Mesh(shader, attributes=dict(position=self.vertices, tex_coord=texcoords, normal=normals), index=indices, k_a=(0.4,0.4,0.4), k_d=(0.8,0.7,0.7), k_s=(1.0,0.85,0.85), s=8)
 
         # setup & upload texture to GPU, bind it to shader name 'diffuse_map'
-        texture = []
 
         terrain_tex = TextureArray(terrain_textures, 2048, 2048, GL.GL_REPEAT, GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR)
         terrain_normal_tex = TextureArray(terrain_normal_textures, 2048, 2048, GL.GL_REPEAT, GL.GL_LINEAR, GL.GL_LINEAR_MIPMAP_LINEAR, gamma_correction=False)
@@ -45,9 +43,6 @@ def generate_height_map(width, height, heightmap_file):
     
     heightmap = im.convert("L")  # convert to grayscale
     
-    #heightmap = ImageOps.autocontrast(im, cutoff = 0)  # adjust contrast
-    
-    #heightmap = np.array(im) / 255  # convert to NumPy array and normalize pixel values
     noise_map = np.zeros((height, width))
     
     for z in range(min(heightmap.height, height)):
@@ -104,10 +99,10 @@ def generate_normals(width, height, position):
             Yd = position[x + (z-1)*width][1]
             Ydr = position[x-1 + (z-1)*width][1]
             Yr = position[x-1 + z*width][1]
-            # normal = np.array([  Yr - Yl, 2, Yd - Yu ]) simplified version
+            
             normal = np.array([  (2*(Yr - Yl) - Yul + Ydr + Yu - Yd), 6, (2*(Yd - Yu) + Yul + Ydr - Yu - Yr)  ])
             normals[x+z*width] = normalized(normal)
-    return normals # Normalization ??
+    return normals 
 
 def generate_tangents(vertices, indices, texcoords):
     tangents = np.zeros((len(vertices), 3))

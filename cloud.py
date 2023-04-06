@@ -1,15 +1,10 @@
 #!/usr/bin/env python3            # standard Python OpenGL wrapper
 import numpy as np                  # all matrix manipulations & OpenGL args
 import core
-from texture import Texture, Textured
-from transform import normalized
-from PIL import Image
-from waterFrameBuffer import WaterFrameBuffers
-import random
+from texture import Textured
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-import noise
 
 # -------------- Terrain ---------------------------------
 

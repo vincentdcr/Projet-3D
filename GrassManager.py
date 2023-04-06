@@ -1,13 +1,8 @@
-import sys
-from itertools import cycle
-import OpenGL.GL as GL              # standard Python OpenGL wrapper
-import glfw                         # lean window system wrapper for OpenGL
-import numpy as np                  # all matrix manipulations & OpenGL args
-from core import Shader, Viewer, Mesh, load, Node
-from texture import Texture, Textured, CubeMapTex, TexturedCube
-from terrain import Terrain
-from transform import translate, vec, quaternion
-from animation import KeyFrameControlNode
+
+import OpenGL.GL as GL              # standard Python OpenGL wrapper          
+from core import Mesh
+from texture import Texture, Textured
+
 
 class Grass_blade(Textured):
     # create a thin triangle with a texture grass.png

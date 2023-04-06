@@ -17,7 +17,6 @@ from quad import Quad
 import water
 from texture import Textured
 from shadow_map_manager import ShadowMapManager
-from noise import Noise
 import cloud
 
 #text functions
@@ -527,16 +526,6 @@ class Viewer(Node):
             Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
             # flush render commands, and swap draw buffers
 
-            #currentTime = glfw.get_time()
-            #self.framecount += 1
-            ## if a second has passed
-            #if (currentTime- self.previousTime >=1):
-            #    print(self.framecount)
-            #    self.framecount =0
-            #    RenderText(str(self.framecount), "textrender/arial.ttf", 36, quadShader).draw(view=self.trackball.view_matrix(),
-            #                                                                  projection=self.trackball.projection_matrix(win_size),
-            #                                                                  model=identity())
-            #    self.previousTime = currentTime
 
             glfw.swap_buffers(self.win)
 
