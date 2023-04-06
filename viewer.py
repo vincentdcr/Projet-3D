@@ -15,6 +15,7 @@ from GrassManager import Grass_blade
 from animation_rocks import RockTime
 from cloud import Cloud
 from noise import Noise
+from particles import ParticlesEmitter
 
 # -------------- Example textured plane class ---------------------------------
 class TexturedPlane(Textured):
@@ -81,7 +82,7 @@ def main():
     reflectionShader = Shader("glsl/texture.vert", "glsl/texture_reflection.frag") # reflection par rapport a la skybox
     #GrassShader = Shader("glsl/grass.vert", "glsl/grass.frag")
     cloudShader = Shader("glsl/cloud.vert", "glsl/cloud.frag")
-    
+    particleShader = Shader("glsl/particle.vert", "glsl/particle.frag")
     noiseMap = Noise()
     
     
@@ -118,6 +119,11 @@ def main():
     viewer.add(Water(waterShader, 513, 513, viewer.getWaterFrameBuffers(), "dudv.png", "waternormalmap.png"))
     viewer.add(CubeMapTexture(skyboxShader, "skybox/", "skyboxnight/"))
     viewer.add(Cloud(cloudShader, 513,513,noiseMap.getNoiseMapTexture()))
+
+    #Particles
+    emitter = ParticlesEmitter(particleShader)
+    viewer.add(emitter)
+    viewer.setParticlesEmitter(emitter)
     # start rendering loop
     viewer.run()   
 

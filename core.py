@@ -19,6 +19,7 @@ from texture import Textured
 from shadow_map_manager import ShadowMapManager
 from noise import Noise
 import cloud
+import particles
 
 #text functions
 from renderText import RenderText
@@ -206,6 +207,10 @@ class Node:
                     GL.glDisable(GL.GL_CULL_FACE)
                     child.draw(model=self.world_transform, **other_uniforms)
                     GL.glEnable(GL.GL_CULL_FACE)
+                elif (isinstance(child, particles.ParticlesEmitter)):
+                    GL.glDisable(GL.GL_CULL_FACE)
+                    child.draw(model=self.world_transform, **other_uniforms)
+                    GL.glEnable(GL.GL_CULL_FACE)
                 else:
                     child.draw(model=self.world_transform, **other_uniforms)
 
@@ -380,7 +385,6 @@ class Viewer(Node):
 
         # initialize FlyoutCamera
         self.camera = FlyoutCamera(position=vec(0.0,0.0,1.0))
-        self.last_time = timer()
         self.mouse = (0, 0)
 
         # register event handlers
@@ -405,11 +409,6 @@ class Viewer(Node):
         #init global light
         self.main_light = (4,1,4)
         self.DAY_TIME = 30 #tps du jour en secondes
-        
-        #init time counter
-        
-        self.previousTime = glfw.get_time()
-        self.framecount = 0
 
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
         self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
@@ -420,6 +419,9 @@ class Viewer(Node):
 
     def run(self):
         """ Main render loop for this OpenGL window """
+
+        #init time counter
+        self.last_time = timer()
 
         quadShader = Shader("glsl/fboviz.vert", "glsl/fboviz.frag")
 
@@ -449,6 +451,7 @@ class Viewer(Node):
                                np.abs(256 * np.sin(timer() / self.DAY_TIME)) )
             cam_pos = np.linalg.inv(self.camera.view_matrix())[:, 3]
 
+            self.particles_emitter.update(self.delta_time, cam_pos[:3])
 
             # draw our scene objects
             self.shadowFrameBuffer.bindFrameBuffer()
@@ -557,7 +560,7 @@ class Viewer(Node):
         
                 
     
-                                
+                    
         elif action == glfw.RELEASE:
             if key == glfw.KEY_W or key == glfw.KEY_S or key == glfw.KEY_A or key == glfw.KEY_D or key == glfw.KEY_SPACE or key == glfw.KEY_X :
                 self.camera.stop_keyboard()
@@ -594,4 +597,7 @@ class Viewer(Node):
     
     def getShadowFrameBuffer(self):
         return self.shadowFrameBuffer
+    
+    def setParticlesEmitter(self, emitter):
+        self.particles_emitter = emitter
     
