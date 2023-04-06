@@ -207,16 +207,27 @@ class Node:
                     child.draw(model=self.world_transform, **other_uniforms)
                     GL.glEnable(GL.GL_CULL_FACE)
                 elif (isinstance(child, particles.ParticlesEmitter)):
-                    GL.glDisable(GL.GL_CULL_FACE)
-                    child.draw(model=self.world_transform, **other_uniforms)
-                    GL.glEnable(GL.GL_CULL_FACE)
+                    if (child.get_activity()):
+                        GL.glDisable(GL.GL_CULL_FACE)
+                        child.draw(model=self.world_transform, **other_uniforms)
+                        GL.glEnable(GL.GL_CULL_FACE)
+                    else:
+                        continue
                 else:
                     child.draw(model=self.world_transform, **other_uniforms)
+
+    # remove nodes once they aren't needed anymore
+    def remove(self, *drawables):
+        """ Add drawables to this node, simply updating children list """
+        self.children.remove(*drawables)
+
 
     def key_handler(self, key):
         """ Dispatch keyboard events to children with key handler """
         for child in (c for c in self.children if hasattr(c, 'key_handler')):
             child.key_handler(key)
+    
+
 
 
 # -------------- 3D resource loader -------------------------------------------
@@ -409,8 +420,9 @@ class Viewer(Node):
         self.main_light = (4,1,4)
         self.DAY_TIME = 30 #tps du jour en secondes
 
-        #init lava_starting to flow flag 
+        #init lava_starting to flow flag and particles starting to appear flag
         self.flag_lava_start = 0
+        self.launch_particles = False
         
         self.waterFrameBuffers = WaterFrameBuffers(self.win)
         self.shadowFrameBuffer = ShadowFrameBuffer(self.win)
@@ -453,7 +465,7 @@ class Viewer(Node):
                                np.abs(256 * np.sin(timer() / self.DAY_TIME)) )
             cam_pos = np.linalg.inv(self.camera.view_matrix())[:, 3]
 
-            self.particles_emitter.update(self.delta_time, cam_pos[:3])
+            self.particles_emitter.update(self.delta_time, cam_pos[:3], self.launch_particles)
 
             # draw our scene objects
             self.shadowFrameBuffer.bindFrameBuffer()
@@ -526,10 +538,10 @@ class Viewer(Node):
         
             GL.glDisable(GL.GL_FRAMEBUFFER_SRGB)
             #Draw the FBOS texture in a quad in the corner of the screen
-            Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
+            #Quad(self.shadowFrameBuffer.getDepthTexture(), mesh).draw(model=identity())
+            
+            
             # flush render commands, and swap draw buffers
-
-
             glfw.swap_buffers(self.win)
 
             # Poll for and process events
@@ -560,6 +572,7 @@ class Viewer(Node):
                 self.camera.move_keyboard("down", self.delta_time) 
             if key== glfw.KEY_ENTER and action==glfw.PRESS:
                 self.flag_lava_start = timer() - 3
+                self.launch_particles = True
         elif action == glfw.RELEASE:
             if key == glfw.KEY_W or key == glfw.KEY_S or key == glfw.KEY_A or key == glfw.KEY_D or key == glfw.KEY_SPACE or key == glfw.KEY_X :
                 self.camera.stop_keyboard()
