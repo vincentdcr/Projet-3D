@@ -455,8 +455,11 @@ class Viewer(Node):
             f' WASD       : move the camera forward/backward/left/right\n'
             f' X/SPACE    : move the camera down/up\n'
             f' Enter      : (re)launch the animation\n'
-            f' R          : restart the global timer\n',
-            f'W          : show the wireframe/vertex view\n')
+            f' R          : restart the global timer\n'
+            f' W          : show the wireframe/vertex view\n'
+            f' LeftClick  : change camera orientation\n'
+            f' RightClick : pan the camera in the scene\n'
+            f' ScrollWheel: change the fov of the camera\n')
 
         while not glfw.window_should_close(self.win):
 
